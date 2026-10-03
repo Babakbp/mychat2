@@ -126,6 +126,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <div><label>تلفن همراه مادر *</label><input id="s_mother_mobile" class="ltr" inputmode="tel"></div>
 <div><label>تلفن ثابت منزل با پیش‌شماره (اختیاری)</label><input id="s_home_phone" class="ltr" inputmode="tel" placeholder="02112345678"></div>
 </div>
+<div id="s_extra"></div>
 <div class="err" id="s_err"></div><button class="btn" id="s_save">ثبت و ارسال اطلاعات برای مدیر</button>
 <h3>عکس پرسنلی (۳×۴ عمودی)</h3>
 <img id="s_prev" class="hide" alt="" style="max-width:150px;border-radius:6px;margin-bottom:8px">
@@ -136,7 +137,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <section id="v-docs" class="card hide">
 <h3 style="margin-top:0">ارسال مدارک برای مدیر</h3>
 <div class="grid" style="max-width:640px"><div><label>نوع مدرک</label><select id="dcat"></select></div>
-<div><label>فایل (PDF یا عکس، حداکثر ۱۰ مگابایت)</label><input type="file" id="dfile" accept=".pdf,.jpg,.jpeg,.png,.webp"></div></div>
+<div><label>فایل (PDF یا عکس، حداکثر ۱۰ مگابایت؛ عکس‌ها خودکار کم‌حجم می‌شوند)</label><input type="file" id="dfile" accept=".pdf,.jpg,.jpeg,.png,.webp"></div></div>
 <div class="err" id="derr"></div><button class="btn" id="dup">ارسال مدرک</button>
 <h3>مدارک ارسال‌شده</h3><div id="dlist" class="tw"></div>
 </section>
@@ -154,6 +155,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <div class="row" style="margin-bottom:10px">
 <input id="q" placeholder="جستجو: نام، کد ملی، کد پرسنلی…" style="flex:1;min-width:180px">
 <button class="btn sec" id="rf">بازخوانی</button>
+<button class="btn sec" id="cc">پاک‌سازی چت</button>
 <button class="btn sec" id="fl">فقط در انتظار تأیید</button>
 <button class="btn" id="ex">خروجی اکسل (CSV)</button>
 </div>
@@ -185,6 +187,8 @@ const SUPABASE_URL='https://yxtwcrrcydcanbshpovf.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4dHdjcnJjeWRjYW5ic2hwb3ZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NzkyMDIsImV4cCI6MjEwNjU1NTIwMn0.EyKpBsbSvu2zsOuhcW9kIzjlZV8tBexy8gHBoET5uWc';
 // ایمیل داخلی حساب‌ها (ایمیل واقعی ارسال نمی‌شود). از نشانی Gmail خودتان استفاده می‌شود:
 const EMAIL_BASE='babakbahramipour', EMAIL_DOMAIN='gmail.com';
+// پیام‌ها و فایل‌های چت قدیمی‌تر از این تعداد روز خودکار پاک می‌شوند
+const CHAT_KEEP_DAYS=60;
 const authEmail=(c,k)=>`${EMAIL_BASE}+${k==='student'?'st':'sp'}${c}@${EMAIL_DOMAIN}`;
 // ============================================================================
 let sb,initErr='';
@@ -247,7 +251,7 @@ async function onSession(s){
   $('#auth').classList.add('hide');$('#app').classList.remove('hide');$('#out').classList.remove('hide');$('#who').classList.remove('hide');
   if(!me){$('#banner').className='banner wn';$('#banner').textContent='ورود انجام شد اما پروفایل شما خوانده نشد'+(pe?': '+pe.message:'')+'. مطمئن شوید schema.sql کامل اجرا شده و برای این کاربر ردیف پروفایل ساخته شده است.';return}
   if(me&&canChat()){await loadMsgs();subscribe()}
-  if(me?.role==='admin')await loadList();
+  if(me?.role==='admin'){await loadList();autoClean()}
   await loadDocs();
   render();
 }
@@ -326,18 +330,61 @@ $('#sp').innerHTML=STK.map(x=>`<button class="btn sec" data-s="${x}" style="font
 $('#sp').querySelectorAll('button').forEach(b=>b.onclick=()=>{$('#sp').classList.add('hide');sendRow({kind:'sticker',body:b.dataset.s})});
 $('#sk').onclick=()=>$('#sp').classList.toggle('hide');
 $('#at').onclick=()=>$('#fi').click();
-$('#fi').onchange=async()=>{const f=$('#fi').files[0];$('#fi').value='';if(!f)return;
-  if(f.size>10*1024*1024){alert('حجم فایل نباید بیشتر از ۱۰ مگابایت باشد.');return}
-  const ext=(f.name.split('.').pop()||'bin').replace(/[^a-zA-Z0-9]/g,'').slice(0,8)||'bin';
+$('#fi').onchange=async()=>{const f0=$('#fi').files[0];$('#fi').value='';if(!f0)return;
+  const f=await shrinkImage(f0,1280,0.78);
+  if(f.size>5*1024*1024){alert('حجم فایل نباید بیشتر از ۵ مگابایت باشد.');return}
+  const ext=f===f0?((f0.name.split('.').pop()||'bin').replace(/[^a-zA-Z0-9]/g,'').slice(0,8)||'bin'):'jpg';
   const path=`${me.id}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
   const {error}=await sb.storage.from('chat-files').upload(path,f,{contentType:f.type||'application/octet-stream'});
   if(error){alert('آپلود فایل انجام نشد: '+error.message);return}
-  sendRow({kind:'file',body:'',file_path:path,file_name:f.name.slice(0,120),file_type:f.type||''})};
+  sendRow({kind:'file',body:'',file_path:path,file_name:f0.name.slice(0,120),file_type:f.type||''})};
+
+// ---- اطلاعات تکمیلی دانش‌آموز (همه اختیاری) ----
+const EDU=['بی‌سواد','ابتدایی','سیکل','دیپلم','فوق‌دیپلم','لیسانس','فوق‌لیسانس','دکتری','حوزوی'];
+const parentF=(w,n)=>[[w+'_name','نام و نام خانوادگی '+n,'t'],[w+'_nid','کد ملی '+n+' (۱۰ رقم)','n10'],[w+'_birth','تاریخ تولد '+n+' (مثال: ۱۳۶۵/۰۳/۱۰)','d'],[w+'_birth_place','شهر محل تولد '+n,'t'],[w+'_edu','میزان تحصیلات '+n,'s',EDU],[w+'_job','شغل '+n,'t'],[w+'_work_phone','تلفن محل کار '+n+' (با پیش‌شماره)','tel'],[w+'_work_addr','نشانی محل کار '+n,'a']];
+const SEC=[
+ ['اطلاعات پدر',parentF('father','پدر')],
+ ['اطلاعات مادر',parentF('mother','مادر')],
+ ['محل سکونت و تماس اضطراری',[['postal_code','کد پستی ۱۰ رقمی','post'],['province','استان','t'],['city','شهر / روستا','t'],['address','نشانی دقیق پستی منزل (محله، خیابان، کوچه، پلاک، طبقه، واحد)','a'],['emergency_name','نام و نسبت فرد برای تماس اضطراری','t'],['emergency_phone','شماره تماس اضطراری','p']]],
+ ['اطلاعات شناسنامه‌ای دانش‌آموز',[['cert_serial','سریال ۶ رقمی شناسنامه','six'],['cert_series','سری شناسنامه (مثال: الف / ۱۲)','t'],['birth_place','محل تولد','t'],['issue_place','محل صدور شناسنامه','t'],['religion','دین و مذهب','s',['اسلام / شیعه','اسلام / سنی','مسیحی','یهودی','زرتشتی','سایر']],['nationality','ملیت','s',['ایرانی','اتباع خارجی']],['prev_school','نام مدرسه قبلی و منطقه','t']]],
+ ['وضعیت سکونت و سرپرستی',[['living_with','دانش‌آموز با چه کسانی زندگی می‌کند','s',['با پدر و مادر','فقط با پدر','فقط با مادر','با سرپرست قانونی']],['guardian_type','نوع سرپرست (در صورت سرپرست قانونی)','t'],['guardian_name','نام سرپرست قانونی','t'],['special_status','وضعیت‌های خاص خانواده','m',['ایثارگری','خانواده شهدا','جانباز','کمیته امداد','بهزیستی']]]],
+ ['سوابق سلامت',[['blood','گروه خونی','s',['A+','A-','B+','B-','AB+','AB-','O+','O-','نامشخص']],['vision','وضعیت بینایی','s',['سالم','نیازمند عینک','آستیگمات','نیازمند نشستن در ردیف جلو']],['hearing','وضعیت شنوایی','s',['سالم','نیازمند سمعک','دارای افت شنوایی']],['mobility','وضعیت حرکتی و جسمانی','s',['بدون مشکل','معافیت از ورزش یا محدودیت حرکتی']],['conditions','بیماری خاص، آلرژی (دارویی/غذایی) و داروهای مصرفی','a']]]
+];
+const NUMT=['n10','p','tel','post','six'];
+const validPDate=v=>{const m=/^(\d{4})\/(\d{2})\/(\d{2})$/.exec(v);if(!m)return false;const y=+m[1],mo=+m[2],d=+m[3];return y>=1300&&y<=1410&&mo>=1&&mo<=12&&d>=1&&d<=(mo<=6?31:30)};
+const vx={
+ n10:v=>validId(v)?'':'کد ملی معتبر نیست.',
+ d:v=>validPDate(v)?'':'تاریخ را به شکل ۱۳۶۵/۰۳/۱۰ وارد کنید.',
+ p:v=>/^09\d{9}$/.test(v)?'':'شماره همراه باید ۱۱ رقمی و مثل 09123456789 باشد.',
+ tel:v=>/^0\d{10}$/.test(v)?'':'تلفن ثابت را با پیش‌شماره و ۱۱ رقمی وارد کنید.',
+ post:v=>(/^\d{10}$/.test(v)&&!/^(\d)\1{9}$/.test(v)&&!['1234567890','0123456789','9876543210'].includes(v))?'':'کد پستی باید ۱۰ رقم معتبر باشد (کد رند، تکراری یا فرضی پذیرفته نمی‌شود).',
+ six:v=>/^\d{6}$/.test(v)?'':'سریال شناسنامه ۶ رقم است.'
+};
+function buildExtra(){
+  $('#s_extra').innerHTML=SEC.map(([t,f],i)=>`<details class="banner" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">${t} (اختیاری)</summary>${i===5?'<div class="banner wn" style="margin-top:8px">اطلاعات سلامت فقط برای مدیر مدرسه قابل مشاهده است و برای ایمنی دانش‌آموز ثبت می‌شود.</div>':''}<div class="grid" style="margin-top:10px">${f.map(([k,l,ty,o])=>
+    ty==='a'?`<div style="grid-column:1/-1"><label>${l}</label><textarea id="x_${k}" rows="2"></textarea></div>`
+    :ty==='m'?`<div style="grid-column:1/-1"><label>${l}</label><div class="chips" id="x_${k}">${o.map(v=>`<label><input type="checkbox" value="${v}">${v}</label>`).join('')}</div></div>`
+    :ty==='s'?`<div><label>${l}</label><select id="x_${k}"><option value="">انتخاب کنید</option>${o.map(v=>`<option>${v}</option>`).join('')}</select></div>`
+    :`<div><label>${l}</label><input id="x_${k}"${NUMT.includes(ty)||ty==='d'?' class="ltr" inputmode="numeric"':''}></div>`).join('')}</div></details>`).join('');
+}
+buildExtra();
+function fillExtra(){const ex=me.student_extra||{};for(const [t,f] of SEC)for(const [k,l,ty] of f){
+  if(ty==='m')document.querySelectorAll('#x_'+k+' input').forEach(i=>i.checked=(ex[k]||[]).includes(i.value));
+  else $('#x_'+k).value=ex[k]??''}}
+function collectExtra(){const ex={};let err='';
+  for(const [t,f] of SEC)for(const [k,l,ty] of f){
+    let v;if(ty==='m')v=[...document.querySelectorAll('#x_'+k+' input:checked')].map(i=>i.value);
+    else{v=$('#x_'+k).value.trim();if(NUMT.includes(ty)||ty==='d')v=dig(v)}
+    if(!v||(Array.isArray(v)&&!v.length))continue;
+    if(vx[ty]){const m=vx[ty](v);if(m&&!err)err=l+': '+m}
+    ex[k]=v}
+  return {ex,err}}
+function extraHtml(s){const ex=s.student_extra||{};return SEC.map(([t,f])=>{const rows=f.filter(([k])=>ex[k]&&(!Array.isArray(ex[k])||ex[k].length)).map(([k,l])=>esc(l)+': '+esc(Array.isArray(ex[k])?ex[k].join('، '):ex[k]));return rows.length?`<hr><b>${t}</b><br>${rows.join('<br>')}`:''}).join('')}
 
 // ---- دانش‌آموزان ----
 const validJalali=v=>{const m=/^(\d{4})\/(\d{2})\/(\d{2})$/.exec(v);if(!m)return false;const y=+m[1],mo=+m[2],d=+m[3];return y>=1370&&y<=1420&&mo>=1&&mo<=12&&d>=1&&d<=(mo<=6?31:30)};
 async function showPhoto(){const i=$('#s_prev');if(me.photo_path){const u=await docUrl(me.photo_path);if(u){i.src=u;i.classList.remove('hide');return}}i.classList.add('hide')}
-function fillStudent(){$('#s_national_id').value=me.national_id||'';['full_name','birth_date','father_mobile','mother_mobile','home_phone'].forEach(k=>$('#s_'+k).value=me[k]??'');showPhoto()}
+function fillStudent(){$('#s_national_id').value=me.national_id||'';['full_name','birth_date','father_mobile','mother_mobile','home_phone'].forEach(k=>$('#s_'+k).value=me[k]??'');fillExtra();showPhoto()}
 $('#s_save').onclick=async()=>{
   const e=$('#s_err');e.style.color='#c0392b';e.textContent='';
   const d={full_name:$('#s_full_name').value.trim(),birth_date:dig($('#s_birth_date').value),father_mobile:dig($('#s_father_mobile').value),mother_mobile:dig($('#s_mother_mobile').value),home_phone:dig($('#s_home_phone').value)};
@@ -345,7 +392,8 @@ $('#s_save').onclick=async()=>{
   if(!validJalali(d.birth_date)){e.textContent='تاریخ تولد را مطابق شناسنامه و به شکل ۱۳۸۹/۰۵/۱۴ وارد کنید.';return}
   if(!/^09\d{9}$/.test(d.father_mobile)||!/^09\d{9}$/.test(d.mother_mobile)){e.textContent='تلفن همراه پدر و مادر باید ۱۱ رقمی و مثل 09123456789 باشد.';return}
   if(d.home_phone&&!/^0\d{10}$/.test(d.home_phone)){e.textContent='تلفن ثابت را همراه پیش‌شماره و ۱۱ رقمی وارد کنید.';return}
-  d.updated_at=new Date().toISOString();
+  const xr=collectExtra();if(xr.err){e.textContent=xr.err;return}
+  d.student_extra=xr.ex;d.updated_at=new Date().toISOString();
   const {error}=await sb.from('profiles').update(d).eq('id',me.id);
   if(error){e.textContent='ذخیره نشد: '+error.message;return}
   me={...me,...d};e.style.color='var(--ok)';e.textContent='اطلاعات ثبت و برای مدیر ارسال شد.';render();
@@ -395,7 +443,7 @@ async function adminSetPw(id,v){const {error}=await sb.rpc('admin_set_password',
 function renderStudents(){
   const q=dig($('#sq').value);
   const L=students.filter(s=>!q||[s.full_name,s.national_id].some(v=>String(v||'').includes(q)));
-  $('#stb').innerHTML=L.map(s=>{const ok=s.birth_date&&s.photo_path;return `<tr><td><a href="#" data-sd="${esc(s.id)}">${esc(s.full_name)}</a></td><td dir="ltr">${esc(s.national_id)}</td><td>${s.photo_path?'✅':'—'}</td><td><span class="tag ${ok?'ok':'wn'}">${ok?'کامل':'ناقص'}</span></td></tr>`+(sopen===s.id?`<tr><td colspan="4" class="det">تاریخ تولد: ${esc(s.birth_date)}<br>تلفن پدر: ${esc(s.father_mobile)} | تلفن مادر: ${esc(s.mother_mobile)} | تلفن ثابت: ${esc(s.home_phone)}<br><img id="sph" class="hide" alt="" style="max-width:150px;border-radius:6px;margin-top:6px"><hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد ملی است ('+esc(s.national_id)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="snpw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-ssp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-srp="${esc(s.id)}">بازنشانی به کد ملی</button></div></td></tr>`:'')}).join('');
+  $('#stb').innerHTML=L.map(s=>{const ok=s.birth_date&&s.photo_path;return `<tr><td><a href="#" data-sd="${esc(s.id)}">${esc(s.full_name)}</a></td><td dir="ltr">${esc(s.national_id)}</td><td>${s.photo_path?'✅':'—'}</td><td><span class="tag ${ok?'ok':'wn'}">${ok?'کامل':'ناقص'}</span></td></tr>`+(sopen===s.id?`<tr><td colspan="4" class="det">تاریخ تولد: ${esc(s.birth_date)}<br>تلفن پدر: ${esc(s.father_mobile)} | تلفن مادر: ${esc(s.mother_mobile)} | تلفن ثابت: ${esc(s.home_phone)}<br>${extraHtml(s)}<img id="sph" class="hide" alt="" style="max-width:150px;border-radius:6px;margin-top:6px"><hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد ملی است ('+esc(s.national_id)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="snpw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-ssp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-srp="${esc(s.id)}">بازنشانی به کد ملی</button></div></td></tr>`:'')}).join('');
   $('#stb').querySelectorAll('[data-sd]').forEach(a=>a.onclick=e=>{e.preventDefault();sopen=sopen===a.dataset.sd?null:a.dataset.sd;renderStudents()});
   $('#stb').querySelectorAll('[data-ssp]').forEach(b=>b.onclick=()=>{const v=$('#snpw').value;if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}adminSetPw(b.dataset.ssp,v)});
   $('#stb').querySelectorAll('[data-srp]').forEach(b=>b.onclick=()=>{const t=students.find(x=>x.id===b.dataset.srp);if(t&&confirm('رمز به کد ملی بازنشانی شود؟'))adminSetPw(t.id,t.national_id)});
@@ -404,12 +452,41 @@ function renderStudents(){
 $('#sq').oninput=renderStudents;
 $('#srf').onclick=async()=>{await loadList();renderStudents()};
 $('#sex').onclick=()=>{
-  const H=['نام','کد ملی','تاریخ تولد','تلفن همراه پدر','تلفن همراه مادر','تلفن ثابت','عکس'];
+  const FX=SEC.flatMap(x=>x[1]);const H=['نام','کد ملی','تاریخ تولد','تلفن همراه پدر','تلفن همراه مادر','تلفن ثابت','عکس',...FX.map(x=>x[1])];
   const cell=(v,t)=>{v=String(v??'').replace(/"/g,'""');return t&&v?`"=""${v}"""`:`"${v}"`};
-  const rows=students.map(s=>[cell(s.full_name),cell(s.national_id,1),cell(s.birth_date),cell(s.father_mobile,1),cell(s.mother_mobile,1),cell(s.home_phone,1),cell(s.photo_path?'دارد':'ندارد')].join(','));
+  const rows=students.map(s=>[cell(s.full_name),cell(s.national_id,1),cell(s.birth_date),cell(s.father_mobile,1),cell(s.mother_mobile,1),cell(s.home_phone,1),cell(s.photo_path?'دارد':'ندارد'),...FX.map(([k,l,ty])=>{const v=(s.student_extra||{})[k];return cell(Array.isArray(v)?v.join('، '):v,['n10','p','tel','post','six'].includes(ty))})].join(','));
   const blob=new Blob(['\ufeff'+[H.map(h=>`"${h}"`).join(','),...rows].join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='students.csv';a.click();URL.revokeObjectURL(a.href);
 };
+
+// ---- کم‌حجم‌سازی عکس و پاک‌سازی چت ----
+async function shrinkImage(file,max,q){
+  if(!/^image\/(jpeg|png|webp)$/.test(file.type))return file;
+  try{const b=await createImageBitmap(file);const k=Math.min(1,max/Math.max(b.width,b.height));
+    const c=document.createElement('canvas');c.width=Math.round(b.width*k);c.height=Math.round(b.height*k);
+    const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(b,0,0,c.width,c.height);
+    const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',q));
+    return blob&&blob.size<file.size?blob:file}catch(e){return file}
+}
+async function cleanChat(manual){
+  const cut=new Date(Date.now()-CHAT_KEEP_DAYS*864e5).toISOString();
+  const c=await sb.from('messages').select('id',{count:'exact',head:true}).lt('created_at',cut);
+  const n=c.count||0;
+  if(!n){if(manual)alert('پیام قدیمی برای پاک‌سازی وجود ندارد.');return}
+  if(manual&&!confirm(n+' پیام قدیمی‌تر از '+CHAT_KEEP_DAYS+' روز (همراه فایل‌های آن‌ها) برای همیشه پاک شود؟'))return;
+  for(let i=0;i<25;i++){
+    const {data}=await sb.from('messages').select('id,file_path').lt('created_at',cut).limit(200);
+    if(!data||!data.length)break;
+    const files=data.map(m=>m.file_path).filter(Boolean);
+    if(files.length)await sb.storage.from('chat-files').remove(files);
+    await sb.from('messages').delete().in('id',data.map(m=>m.id));
+  }
+  await loadMsgs();renderChat();
+  if(manual)alert('پاک‌سازی انجام شد.');
+}
+async function autoClean(){try{const k='lastChatClean',t=+(localStorage.getItem(k)||0);if(Date.now()-t<20*3600e3)return;localStorage.setItem(k,String(Date.now()));await cleanChat(false)}catch(e){}}
+$('#cc').textContent='🧹 پاک‌سازی چت قدیمی‌تر از '+CHAT_KEEP_DAYS+' روز';
+$('#cc').onclick=()=>cleanChat(true);
 
 // ---- مدارک ----
 const CATS={birth_certificate:'شناسنامه (همه صفحات)',national_card:'کارت ملی',appreciation:'تقدیرنامه',inservice:'لیست دوره‌های ضمن خدمت',plan_daily:'طرح درس روزانه',plan_annual:'طرح درس سالانه',other:'سایر مدارک'};
@@ -424,18 +501,19 @@ function renderDocs(){
     await sb.storage.from('staff-docs').remove([d.file_path]);await sb.from('documents').delete().eq('id',d.id);await loadDocs()});
 }
 $('#dup').onclick=async()=>{
-  const f=$('#dfile').files[0],e=$('#derr');e.style.color='#c0392b';e.textContent='';
-  if(!f){e.textContent='فایلی انتخاب نشده است.';return}
-  if(f.size>10*1024*1024){e.textContent='حجم فایل نباید بیشتر از ۱۰ مگابایت باشد.';return}
-  if(!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type)){e.textContent='فقط PDF یا عکس (JPG، PNG، WebP) مجاز است.';return}
-  const ext=(f.name.split('.').pop()||'bin').replace(/[^a-zA-Z0-9]/g,'').slice(0,8)||'bin';
+  const f0=$('#dfile').files[0],e=$('#derr');e.style.color='#c0392b';e.textContent='';
+  if(!f0){e.textContent='فایلی انتخاب نشده است.';return}
+  if(!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f0.type)){e.textContent='فقط PDF یا عکس (JPG، PNG، WebP) مجاز است.';return}
+  $('#dup').disabled=true;e.style.color='';e.textContent='در حال آماده‌سازی فایل…';
+  const f=await shrinkImage(f0,1600,0.8);
+  if(f.size>10*1024*1024){e.style.color='#c0392b';e.textContent='حجم فایل نباید بیشتر از ۱۰ مگابایت باشد.';$('#dup').disabled=false;return}
+  const ext=f===f0?((f0.name.split('.').pop()||'bin').replace(/[^a-zA-Z0-9]/g,'').slice(0,8)||'bin'):'jpg';
   const path=`${me.id}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
-  $('#dup').disabled=true;
   const up=await sb.storage.from('staff-docs').upload(path,f,{contentType:f.type});
-  if(up.error){e.textContent='آپلود انجام نشد: '+up.error.message;$('#dup').disabled=false;return}
-  const ins=await sb.from('documents').insert({category:$('#dcat').value,file_name:f.name.slice(0,120),file_path:path,file_type:f.type,size:f.size});
+  if(up.error){e.style.color='#c0392b';e.textContent='آپلود انجام نشد: '+up.error.message;$('#dup').disabled=false;return}
+  const ins=await sb.from('documents').insert({category:$('#dcat').value,file_name:f0.name.slice(0,120),file_path:path,file_type:f.type,size:f.size});
   $('#dup').disabled=false;
-  if(ins.error){await sb.storage.from('staff-docs').remove([path]);e.textContent='ثبت مدرک انجام نشد: '+ins.error.message;return}
+  if(ins.error){await sb.storage.from('staff-docs').remove([path]);e.style.color='#c0392b';e.textContent='ثبت مدرک انجام نشد: '+ins.error.message;return}
   $('#dfile').value='';e.style.color='var(--ok)';e.textContent='مدرک ارسال شد.';await loadDocs();
 };
 async function loadAdminDocs(id){
