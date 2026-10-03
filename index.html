@@ -77,6 +77,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <div id="banner"></div>
 
 <section id="v-form" class="card hide">
+<div class="row" style="margin-bottom:12px;align-items:flex-start"><img id="t_prev" class="hide" alt="" style="width:105px;height:140px;object-fit:cover;border-radius:8px;border:1px solid var(--br)"><div><div style="color:var(--mu);font-size:13px;margin-bottom:6px">عکس پرسنلی (۳×۴)</div><button class="btn sec sm" id="t_pick">انتخاب یا تغییر عکس</button><input type="file" id="t_photo" accept="image/*" class="hide"><div class="err" id="t_perr"></div></div></div>
 <h3 style="margin-top:0">مشخصات فردی</h3>
 <div class="grid">
 <div><label>نام و نام خانوادگی *</label><input id="full_name"></div>
@@ -115,7 +116,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <li>تاریخ تولد دقیقاً مطابق شناسنامه، به شکل ۱۳۸۹/۰۵/۱۴ (سال ۴ رقمی، ماه و روز ۲ رقمی).</li>
 <li>تلفن همراه پدر و مادر ۱۱ رقمی (مثل ۰۹۱۲۳۴۵۶۷۸۹) و فعال؛ تلفن ثابت همراه پیش‌شماره (مثل ۰۲۱XXXXXXXX).</li>
 <li>عکس: جلوی دیوار سفید و یکدست، نور مناسب، دوربین هم‌سطح چشم، تمام‌رخ، پوشش مرتب، بدون فیلتر و روتوش.</li>
-<li>کادر عمودی ۳ در ۴ از بالای سر تا روی سینه؛ صورت حدود ۷۰ تا ۷۵ درصد کادر. فرمت JPG یا PNG، حداکثر ۲ مگابایت (ترجیحاً بیش از ۱۰۰ کیلوبایت).</li>
+<li>بعد از انتخاب عکس (یا گرفتن عکس با دوربین)، پنجره ویرایش باز می‌شود: عکس را بکشید، بزرگ/کوچک و بچرخانید تا صورت حدود ۷۰ تا ۷۵ درصد کادر ۳×۴ را پر کند (از بالای سر تا روی سینه). برش و کم‌حجم‌سازی خودکار انجام می‌شود.</li>
 <li>عکس روی کارت‌های رسمی آزمون و پرونده چاپ می‌شود؛ مسئولیت عکس غیررسمی یا کدر با دانش‌آموز و اولیاست.</li></ul></details>
 <div class="grid">
 <div><label>کد ملی</label><input id="s_national_id" class="ltr" disabled></div>
@@ -123,12 +124,12 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <div><label>تاریخ تولد شمسی * (مثال: ۱۳۸۹/۰۵/۱۴)</label><input id="s_birth_date" class="ltr" placeholder="1389/05/14"></div>
 <div><label>تلفن همراه پدر *</label><input id="s_father_mobile" class="ltr" inputmode="tel"></div>
 <div><label>تلفن همراه مادر *</label><input id="s_mother_mobile" class="ltr" inputmode="tel"></div>
-<div><label>تلفن ثابت منزل با پیش‌شماره *</label><input id="s_home_phone" class="ltr" inputmode="tel" placeholder="02112345678"></div>
+<div><label>تلفن ثابت منزل با پیش‌شماره (اختیاری)</label><input id="s_home_phone" class="ltr" inputmode="tel" placeholder="02112345678"></div>
 </div>
 <div class="err" id="s_err"></div><button class="btn" id="s_save">ثبت و ارسال اطلاعات برای مدیر</button>
 <h3>عکس پرسنلی (۳×۴ عمودی)</h3>
 <img id="s_prev" class="hide" alt="" style="max-width:150px;border-radius:6px;margin-bottom:8px">
-<input type="file" id="s_photo" accept=".jpg,.jpeg,.png">
+<input type="file" id="s_photo" accept="image/*">
 <div class="err" id="s_perr"></div>
 </section>
 
@@ -275,6 +276,7 @@ function render(){
     document.querySelectorAll('#grades input').forEach(i=>i.checked=(me.grades||[]).includes(i.value));filled=true}
   $('#personnel_code').disabled=!isAdm();
   if(me.role==='student'&&!sfilled){fillStudent();sfilled=true}
+  if(me.role!=='student')showTPhoto();
   $('#chatlock').classList.toggle('hide',canChat());$('#cf').classList.toggle('hide',!canChat());
   renderChat();if(isAdm()){renderAdmin();renderStudents()}
 }
@@ -342,28 +344,51 @@ $('#s_save').onclick=async()=>{
   if(!d.full_name){e.textContent='نام و نام خانوادگی را وارد کنید.';return}
   if(!validJalali(d.birth_date)){e.textContent='تاریخ تولد را مطابق شناسنامه و به شکل ۱۳۸۹/۰۵/۱۴ وارد کنید.';return}
   if(!/^09\d{9}$/.test(d.father_mobile)||!/^09\d{9}$/.test(d.mother_mobile)){e.textContent='تلفن همراه پدر و مادر باید ۱۱ رقمی و مثل 09123456789 باشد.';return}
-  if(!/^0\d{10}$/.test(d.home_phone)){e.textContent='تلفن ثابت را همراه پیش‌شماره و ۱۱ رقمی وارد کنید.';return}
+  if(d.home_phone&&!/^0\d{10}$/.test(d.home_phone)){e.textContent='تلفن ثابت را همراه پیش‌شماره و ۱۱ رقمی وارد کنید.';return}
   d.updated_at=new Date().toISOString();
   const {error}=await sb.from('profiles').update(d).eq('id',me.id);
   if(error){e.textContent='ذخیره نشد: '+error.message;return}
   me={...me,...d};e.style.color='var(--ok)';e.textContent='اطلاعات ثبت و برای مدیر ارسال شد.';render();
 };
-$('#s_photo').onchange=async()=>{
-  const f=$('#s_photo').files[0],e=$('#s_perr');$('#s_photo').value='';e.style.color='#c0392b';e.textContent='';if(!f)return;
-  if(!/^image\/(jpeg|png)$/.test(f.type)){e.textContent='فقط فرمت JPG یا PNG مجاز است.';return}
-  if(f.size>2*1024*1024){e.textContent='حجم عکس نباید بیشتر از ۲ مگابایت باشد.';return}
-  if(f.size<100*1024&&!confirm('حجم عکس کمتر از ۱۰۰ کیلوبایت است و ممکن است کدر چاپ شود. ادامه می‌دهید؟'))return;
-  try{const b=await createImageBitmap(f);const r=b.width/b.height;
-    if(r<0.70||r>0.80){e.textContent='عکس باید عمودی و با نسبت ۳ به ۴ باشد. آن را در گوشی برش (Crop) بزنید و دوباره بارگذاری کنید.';return}}
-  catch(x){e.textContent='این فایل به‌عنوان عکس خوانده نشد.';return}
-  const path=`${me.id}/photo_${Date.now()}.${f.type==='image/png'?'png':'jpg'}`;
-  const up=await sb.storage.from('staff-docs').upload(path,f,{contentType:f.type});
+function cropPhoto(file){return new Promise(async res=>{
+  let bmp;try{bmp=await createImageBitmap(file)}catch(x){res(null);return}
+  const W=300,H=400;let rot=0,zoom=1,ox=0,oy=0,drag=null;
+  const m=document.createElement('div');m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto';
+  m.innerHTML=`<div class="card" style="max-width:340px;width:100%;margin:0"><div style="font-size:13px;color:var(--mu)">عکس را بکشید تا جابه‌جا شود؛ با لغزنده بزرگ/کوچک کنید و در صورت نیاز بچرخانید.</div><canvas id="cc" width="300" height="400" style="width:100%;max-width:300px;touch-action:none;border:1px solid var(--br);border-radius:8px;display:block;margin:8px auto;background:#fff"></canvas><label>بزرگ‌نمایی</label><input type="range" id="cz" min="1" max="3" step="0.01" value="1" style="padding:0"><div class="row" style="margin-top:8px"><button class="btn sec sm" id="cl">↺ چرخش</button><button class="btn sec sm" id="cr">↻ چرخش</button></div><div class="row" style="margin-top:10px"><button class="btn" id="cok">تأیید و بارگذاری</button><button class="btn sec" id="cx">انصراف</button></div></div>`;
+  document.body.append(m);
+  const cv=m.querySelector('#cc'),cx=cv.getContext('2d');
+  const geo=()=>{const sw=rot%2?bmp.height:bmp.width,sh=rot%2?bmp.width:bmp.height,s=Math.max(W/sw,H/sh)*zoom,mx=Math.max(0,(sw*s-W)/2),my=Math.max(0,(sh*s-H)/2);ox=Math.min(mx,Math.max(-mx,ox));oy=Math.min(my,Math.max(-my,oy));return s};
+  const draw=(c,k)=>{const s=geo();c.setTransform(1,0,0,1,0,0);c.fillStyle='#fff';c.fillRect(0,0,W*k,H*k);c.translate(W*k/2+ox*k,H*k/2+oy*k);c.rotate(rot*Math.PI/2);c.scale(s*k,s*k);c.drawImage(bmp,-bmp.width/2,-bmp.height/2)};
+  const paint=()=>draw(cx,1);paint();
+  cv.onpointerdown=e=>{drag={x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId)};
+  cv.onpointermove=e=>{if(!drag)return;const f=W/cv.getBoundingClientRect().width;ox+=(e.clientX-drag.x)*f;oy+=(e.clientY-drag.y)*f;drag={x:e.clientX,y:e.clientY};paint()};
+  cv.onpointerup=cv.onpointercancel=()=>{drag=null};
+  m.querySelector('#cz').oninput=e=>{zoom=+e.target.value;paint()};
+  m.querySelector('#cl').onclick=()=>{rot=(rot+3)%4;ox=oy=0;paint()};
+  m.querySelector('#cr').onclick=()=>{rot=(rot+1)%4;ox=oy=0;paint()};
+  const done=v=>{m.remove();res(v)};
+  m.querySelector('#cx').onclick=()=>done(null);
+  m.querySelector('#cok').onclick=()=>{const o=document.createElement('canvas');o.width=900;o.height=1200;draw(o.getContext('2d'),3);
+    let q=0.88;const go=()=>o.toBlob(b=>{if(b&&b.size>1.9*1024*1024&&q>0.5){q-=0.1;go()}else done(b)},'image/jpeg',q);go()};
+});}
+async function uploadPhoto(file,e,after){
+  e.style.color='#c0392b';e.textContent='';
+  if(!/^image\//.test(file.type)){e.textContent='فقط فایل عکس مجاز است.';return}
+  const blob=await cropPhoto(file);
+  if(blob===null){e.textContent='عکس بارگذاری نشد (فایل خوانده نشد یا انصراف دادید).';return}
+  const path=`${me.id}/photo_${Date.now()}.jpg`;
+  const up=await sb.storage.from('staff-docs').upload(path,blob,{contentType:'image/jpeg'});
   if(up.error){e.textContent='آپلود انجام نشد: '+up.error.message;return}
   const {error}=await sb.from('profiles').update({photo_path:path,updated_at:new Date().toISOString()}).eq('id',me.id);
   if(error){await sb.storage.from('staff-docs').remove([path]);e.textContent='ثبت عکس انجام نشد: '+error.message;return}
   if(me.photo_path)await sb.storage.from('staff-docs').remove([me.photo_path]);
-  me.photo_path=path;e.style.color='var(--ok)';e.textContent='عکس بارگذاری شد.';showPhoto();render();
-};
+  me.photo_path=path;e.style.color='var(--ok)';e.textContent='عکس بارگذاری شد.';after();
+}
+$('#s_photo').onchange=async()=>{const f=$('#s_photo').files[0];$('#s_photo').value='';if(f)await uploadPhoto(f,$('#s_perr'),()=>{showPhoto();render()})};
+let tShown='';
+async function showTPhoto(){const i=$('#t_prev');if(!me.photo_path){i.classList.add('hide');tShown='';return}if(tShown===me.photo_path)return;const u=await docUrl(me.photo_path);if(u){i.src=u;i.classList.remove('hide');tShown=me.photo_path}}
+$('#t_pick').onclick=()=>$('#t_photo').click();
+$('#t_photo').onchange=async()=>{const f=$('#t_photo').files[0];$('#t_photo').value='';if(f)await uploadPhoto(f,$('#t_perr'),()=>{tShown='';showTPhoto()})};
 async function adminSetPw(id,v){const {error}=await sb.rpc('admin_set_password',{target:id,new_password:v});
   if(error){alert('تنظیم رمز انجام نشد: '+error.message);return}
   alert('رمز تنظیم شد. کاربر در اولین ورود باید آن را تغییر دهد.');await loadList();renderAdmin();renderStudents()}
@@ -420,12 +445,13 @@ async function loadAdminDocs(id){
 }
 
 // ---- چاپ فرم مشخصات (از پنجره چاپ مرورگر گزینه «Save as PDF» را انتخاب کنید) ----
-function printForm(p){
+async function printForm(p){
   if(!p)return;
   const rows=[['نام و نام خانوادگی',p.full_name],['کد ملی',p.national_id],['کد پرسنلی',p.personnel_code],['تلفن همراه',p.mobile],['تلفن ثابت',p.home_phone],['تلفن اضطراری',p.emergency_phone],['مدرک تحصیلی',p.degree],['رشته تحصیلی',p.field_of_study],['رشته تدریس',p.teaching_field],['سمت',p.position],['سابقه خدمت (سال)',p.service_years],['پایه‌های تدریس',(p.grades||[]).join('، ')],['روزهای همکاری',(p.work_days||[]).join('، ')],['نام همسر',p.spouse_name],['شغل همسر',p.spouse_job],['تلفن همسر',p.spouse_phone],['تعداد فرزند',p.children],['آدرس',p.address]];
   const w=window.open('','_blank');if(!w){alert('اجازه باز شدن پنجره جدید را به سایت بدهید.');return}
-  w.document.write(`<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فرم مشخصات - ${esc(p.full_name)}</title><link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet"><style>@page{size:A4;margin:14mm}body{font-family:Vazirmatn,Tahoma,sans-serif;color:#000;line-height:1.7}h1{text-align:center;font-size:20px;margin:0 0 4px}.d{text-align:center;font-size:12px;margin-bottom:14px}table{width:100%;border-collapse:collapse}td{border:1px solid #444;padding:7px 10px;font-size:13px;vertical-align:top}td:first-child{width:30%;background:#eee;font-weight:600}.sig{display:flex;justify-content:space-between;margin-top:48px;font-size:13px}</style></head><body><h1>فرم مشخصات همکار</h1><div class="d">تاریخ چاپ: ${new Date().toLocaleDateString('fa-IR')}</div><table>${rows.map(([k,v])=>`<tr><td>${k}</td><td>${esc(v)}</td></tr>`).join('')}</table><div class="sig"><span>امضای همکار</span><span>امضای مدیر</span></div></body></html>`);
-  w.document.close();setTimeout(()=>{w.focus();w.print()},1200);
+  const pu=p.photo_path?await docUrl(p.photo_path):'';
+  w.document.write(`<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فرم مشخصات - ${esc(p.full_name)}</title><link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet"><style>@page{size:A4;margin:14mm}body{font-family:Vazirmatn,Tahoma,sans-serif;color:#000;line-height:1.7}h1{text-align:center;font-size:20px;margin:0 0 4px}.d{text-align:center;font-size:12px;margin-bottom:14px}table{width:100%;border-collapse:collapse}td{border:1px solid #444;padding:7px 10px;font-size:13px;vertical-align:top}td:first-child{width:30%;background:#eee;font-weight:600}.sig{display:flex;justify-content:space-between;margin-top:48px;font-size:13px}</style></head><body>${pu?`<img src="${pu}" style="position:absolute;left:0;top:0;width:30mm;height:40mm;object-fit:cover;border:1px solid #444">`:''}<h1>فرم مشخصات همکار</h1><div class="d">تاریخ چاپ: ${new Date().toLocaleDateString('fa-IR')}</div><table>${rows.map(([k,v])=>`<tr><td>${k}</td><td>${esc(v)}</td></tr>`).join('')}</table><div class="sig"><span>امضای همکار</span><span>امضای مدیر</span></div></body></html>`);
+  w.document.close();setTimeout(()=>{w.focus();w.print()},1800);
 }
 $('#prt').onclick=()=>{if(!me||!me.full_name||!me.national_id){alert('ابتدا اطلاعات فرم را ثبت کنید.');return}printForm(me)};
 
@@ -445,7 +471,7 @@ function renderAdmin(){
   let L=list.filter(s=>!q||[s.full_name,s.national_id,s.personnel_code,s.teaching_field].some(v=>String(v||'').includes(q)));
   if(onlyPending)L=L.filter(s=>!s.approved);
   $('#empty').classList.toggle('hide',list.length>0);$('#fl').textContent=onlyPending?'نمایش همه':'فقط در انتظار تأیید';
-  $('#tb').innerHTML=L.map(s=>`<tr><td><a href="#" data-d="${esc(s.id)}">${esc(s.full_name||s.email)}</a></td><td dir="ltr">${esc(s.personnel_code)}</td><td>${esc(s.teaching_field)}</td><td><span class="tag ${s.approved?'ok':'wn'}">${s.approved?'تأییدشده':'در انتظار'}</span></td><td><button class="btn sm ${s.approved?'sec':''}" data-a="${esc(s.id)}">${s.approved?'لغو تأیید':'تأیید'}</button></td></tr>`+(open===s.id?`<tr><td colspan="5" class="det">ایمیل: ${esc(s.email)} | کد ملی: ${esc(s.national_id)} | مدرک: ${esc(s.degree)} ${esc(s.field_of_study)}<br>سمت: ${esc(s.position)} | سابقه: ${esc(s.service_years)} سال | پایه‌ها: ${esc((s.grades||[]).join('، '))} | روزها: ${esc((s.work_days||[]).join('، '))}<br>همسر: ${esc(s.spouse_name)} ${esc(s.spouse_job)} ${esc(s.spouse_phone)} | فرزند: ${esc(s.children)}<br>همراه: ${esc(s.mobile)} | ثابت: ${esc(s.home_phone)} | اضطراری: ${esc(s.emergency_phone)}<br>آدرس: ${esc(s.address)}<hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد پرسنلی است ('+esc(s.personnel_code)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="npw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-sp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-rp="${esc(s.id)}">بازنشانی به کد پرسنلی</button></div><hr><b>مدارک:</b> <span id="dl-${esc(s.id)}">…</span><div style="margin-top:8px"><button class="btn sec sm" data-p="${esc(s.id)}">🖨 چاپ فرم مشخصات</button></div></td></tr>`:'')).join('');
+  $('#tb').innerHTML=L.map(s=>`<tr><td><a href="#" data-d="${esc(s.id)}">${esc(s.full_name||s.email)}</a></td><td dir="ltr">${esc(s.personnel_code)}</td><td>${esc(s.teaching_field)}</td><td><span class="tag ${s.approved?'ok':'wn'}">${s.approved?'تأییدشده':'در انتظار'}</span></td><td><button class="btn sm ${s.approved?'sec':''}" data-a="${esc(s.id)}">${s.approved?'لغو تأیید':'تأیید'}</button></td></tr>`+(open===s.id?`<tr><td colspan="5" class="det"><img id="tph" class="hide" alt="" style="max-width:110px;border-radius:6px"><br>ایمیل: ${esc(s.email)} | کد ملی: ${esc(s.national_id)} | مدرک: ${esc(s.degree)} ${esc(s.field_of_study)}<br>سمت: ${esc(s.position)} | سابقه: ${esc(s.service_years)} سال | پایه‌ها: ${esc((s.grades||[]).join('، '))} | روزها: ${esc((s.work_days||[]).join('، '))}<br>همسر: ${esc(s.spouse_name)} ${esc(s.spouse_job)} ${esc(s.spouse_phone)} | فرزند: ${esc(s.children)}<br>همراه: ${esc(s.mobile)} | ثابت: ${esc(s.home_phone)} | اضطراری: ${esc(s.emergency_phone)}<br>آدرس: ${esc(s.address)}<hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد پرسنلی است ('+esc(s.personnel_code)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="npw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-sp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-rp="${esc(s.id)}">بازنشانی به کد پرسنلی</button></div><hr><b>مدارک:</b> <span id="dl-${esc(s.id)}">…</span><div style="margin-top:8px"><button class="btn sec sm" data-p="${esc(s.id)}">🖨 چاپ فرم مشخصات</button></div></td></tr>`:'')).join('');
   $('#tb').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{const s=list.find(x=>x.id===b.dataset.a);
     const {error}=await sb.rpc('set_approved',{uid:s.id,val:!s.approved});if(error)alert(error.message);else{await loadList();renderAdmin()}});
   $('#tb').querySelectorAll('[data-d]').forEach(a=>a.onclick=e=>{e.preventDefault();open=open===a.dataset.d?null:a.dataset.d;renderAdmin()});
@@ -455,7 +481,7 @@ function renderAdmin(){
   $('#tb').querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{const v=$('#npw').value;if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}setPw(b.dataset.sp,v)});
   $('#tb').querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>{const t=list.find(x=>x.id===b.dataset.rp);if(!t||!t.personnel_code){alert('کد پرسنلی ثبت نشده است.');return}if(confirm('رمز به کد پرسنلی بازنشانی شود؟'))setPw(t.id,t.personnel_code)});
   $('#tb').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>printForm(list.find(x=>x.id===b.dataset.p)));
-  if(open)loadAdminDocs(open);
+  if(open){loadAdminDocs(open);const t=list.find(x=>x.id===open);if(t&&t.photo_path)docUrl(t.photo_path).then(u=>{const i=document.getElementById('tph');if(i&&u){i.src=u;i.classList.remove('hide')}})}
 }
 $('#q').oninput=renderAdmin;$('#fl').onclick=()=>{onlyPending=!onlyPending;renderAdmin()};
 $('#rf').onclick=async()=>{await loadList();renderAdmin()};
