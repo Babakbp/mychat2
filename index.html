@@ -124,7 +124,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <div><label>تاریخ تولد شمسی * (مثال: ۱۳۸۹/۰۵/۱۴)</label><input id="s_birth_date" class="ltr" placeholder="1389/05/14"></div>
 <div><label>تلفن همراه پدر *</label><input id="s_father_mobile" class="ltr" inputmode="tel"></div>
 <div><label>تلفن همراه مادر *</label><input id="s_mother_mobile" class="ltr" inputmode="tel"></div>
-<div><label>تلفن ثابت منزل با پیش‌شماره (اختیاری)</label><input id="s_home_phone" class="ltr" inputmode="tel" placeholder="02112345678"></div>
+<div><label>تلفن ثابت منزل با پیش‌شماره</label><input id="s_home_phone" class="ltr" inputmode="tel" placeholder="02112345678"></div>
 </div>
 <div id="s_extra"></div>
 <div class="err" id="s_err"></div><button class="btn" id="s_save">ثبت و ارسال اطلاعات برای مدیر</button>
@@ -157,7 +157,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <button class="btn sec" id="rf">بازخوانی</button>
 <button class="btn sec" id="cc">پاک‌سازی چت</button>
 <button class="btn sec" id="fl">فقط در انتظار تأیید</button>
-<button class="btn" id="ex">خروجی اکسل (CSV)</button>
+<button class="btn" id="ex">خروجی اکسل (XLSX)</button>
 </div>
 <div class="tw"><table><thead><tr><th>نام</th><th>کد پرسنلی</th><th>رشته تدریس</th><th>وضعیت</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
 <div id="empty" class="banner hide">هنوز ثبت‌نامی انجام نشده است.</div>
@@ -165,7 +165,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 
 <section id="v-students" class="card hide">
 <div class="banner">تأیید درخواست‌های ثبت‌نام (همکار و دانش‌آموز) در تب «پنل مدیر» انجام می‌شود.</div>
-<div class="row" style="margin-bottom:10px"><input id="sq" placeholder="جستجو: نام یا کد ملی" style="flex:1;min-width:180px"><button class="btn sec" id="srf">بازخوانی</button><button class="btn" id="sex">خروجی اکسل (CSV)</button></div>
+<div class="row" style="margin-bottom:10px"><input id="sq" placeholder="جستجو: نام یا کد ملی" style="flex:1;min-width:180px"><button class="btn sec" id="srf">بازخوانی</button><button class="btn" id="sex">خروجی اکسل (XLSX)</button></div>
 <div class="tw"><table><thead><tr><th>نام</th><th>کد ملی</th><th>عکس</th><th>پرونده</th></tr></thead><tbody id="stb"></tbody></table></div>
 </section>
 
@@ -341,7 +341,8 @@ $('#fi').onchange=async()=>{const f0=$('#fi').files[0];$('#fi').value='';if(!f0)
 
 // ---- اطلاعات تکمیلی دانش‌آموز (همه اختیاری) ----
 const EDU=['بی‌سواد','ابتدایی','سیکل','دیپلم','فوق‌دیپلم','لیسانس','فوق‌لیسانس','دکتری','حوزوی'];
-const parentF=(w,n)=>[[w+'_name','نام و نام خانوادگی '+n,'t'],[w+'_nid','کد ملی '+n+' (۱۰ رقم)','n10'],[w+'_birth','تاریخ تولد '+n+' (مثال: ۱۳۶۵/۰۳/۱۰)','d'],[w+'_birth_place','شهر محل تولد '+n,'t'],[w+'_edu','میزان تحصیلات '+n,'s',EDU],[w+'_job','شغل '+n,'t'],[w+'_work_phone','تلفن محل کار '+n+' (با پیش‌شماره)','tel'],[w+'_work_addr','نشانی محل کار '+n,'a']];
+const JOBS=['فرهنگی','نظامی و انتظامی','بهداشت و درمانی','خانه دار','سایر کارمندان دولت','آزاد تجاری','آزاد صنعتی','آزاد هنری','آزاد خدماتی','کارگر ساده','کارمند موسسات غیردولتی','بازنشسته','بیکار','سایر','هنوز در حال تحصیل است'];
+const parentF=(w,n)=>[[w+'_name','نام و نام خانوادگی '+n,'t'],[w+'_nid','کد ملی '+n+' (۱۰ رقم)','n10'],[w+'_birth','تاریخ تولد '+n+' (مثال: ۱۳۶۵/۰۳/۱۰)','d'],[w+'_birth_place','شهر محل تولد '+n,'t'],[w+'_edu','میزان تحصیلات '+n,'s',EDU],[w+'_job','شغل '+n,'s',JOBS],[w+'_work_phone','تلفن محل کار '+n+' (با پیش‌شماره)','tel'],[w+'_work_addr','نشانی محل کار '+n,'a']];
 const SEC=[
  ['اطلاعات پدر',parentF('father','پدر')],
  ['اطلاعات مادر',parentF('mother','مادر')],
@@ -361,7 +362,7 @@ const vx={
  six:v=>/^\d{6}$/.test(v)?'':'سریال شناسنامه ۶ رقم است.'
 };
 function buildExtra(){
-  $('#s_extra').innerHTML=SEC.map(([t,f],i)=>`<details class="banner" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">${t} (اختیاری)</summary>${i===5?'<div class="banner wn" style="margin-top:8px">اطلاعات سلامت فقط برای مدیر مدرسه قابل مشاهده است و برای ایمنی دانش‌آموز ثبت می‌شود.</div>':''}<div class="grid" style="margin-top:10px">${f.map(([k,l,ty,o])=>
+  $('#s_extra').innerHTML=SEC.map(([t,f],i)=>`<details class="banner" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">${t}</summary>${i===5?'<div class="banner wn" style="margin-top:8px">اطلاعات سلامت فقط برای مدیر مدرسه قابل مشاهده است و برای ایمنی دانش‌آموز ثبت می‌شود.</div>':''}<div class="grid" style="margin-top:10px">${f.map(([k,l,ty,o])=>
     ty==='a'?`<div style="grid-column:1/-1"><label>${l}</label><textarea id="x_${k}" rows="2"></textarea></div>`
     :ty==='m'?`<div style="grid-column:1/-1"><label>${l}</label><div class="chips" id="x_${k}">${o.map(v=>`<label><input type="checkbox" value="${v}">${v}</label>`).join('')}</div></div>`
     :ty==='s'?`<div><label>${l}</label><select id="x_${k}"><option value="">انتخاب کنید</option>${o.map(v=>`<option>${v}</option>`).join('')}</select></div>`
@@ -451,13 +452,6 @@ function renderStudents(){
 }
 $('#sq').oninput=renderStudents;
 $('#srf').onclick=async()=>{await loadList();renderStudents()};
-$('#sex').onclick=()=>{
-  const FX=SEC.flatMap(x=>x[1]);const H=['نام','کد ملی','تاریخ تولد','تلفن همراه پدر','تلفن همراه مادر','تلفن ثابت','عکس',...FX.map(x=>x[1])];
-  const cell=(v,t)=>{v=String(v??'').replace(/"/g,'""');return t&&v?`"=""${v}"""`:`"${v}"`};
-  const rows=students.map(s=>[cell(s.full_name),cell(s.national_id,1),cell(s.birth_date),cell(s.father_mobile,1),cell(s.mother_mobile,1),cell(s.home_phone,1),cell(s.photo_path?'دارد':'ندارد'),...FX.map(([k,l,ty])=>{const v=(s.student_extra||{})[k];return cell(Array.isArray(v)?v.join('، '):v,['n10','p','tel','post','six'].includes(ty))})].join(','));
-  const blob=new Blob(['\ufeff'+[H.map(h=>`"${h}"`).join(','),...rows].join('\r\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='students.csv';a.click();URL.revokeObjectURL(a.href);
-};
 
 // ---- کم‌حجم‌سازی عکس و پاک‌سازی چت ----
 async function shrinkImage(file,max,q){
@@ -487,6 +481,41 @@ async function cleanChat(manual){
 async function autoClean(){try{const k='lastChatClean',t=+(localStorage.getItem(k)||0);if(Date.now()-t<20*3600e3)return;localStorage.setItem(k,String(Date.now()));await cleanChat(false)}catch(e){}}
 $('#cc').textContent='🧹 پاک‌سازی چت قدیمی‌تر از '+CHAT_KEEP_DAYS+' روز';
 $('#cc').onclick=()=>cleanChat(true);
+
+// ---- خروجی اکسل (xlsx) ----
+function loadScript(src){return new Promise((ok,no)=>{if(window.ExcelJS)return ok();const t=document.createElement('script');t.src=src;t.onload=ok;t.onerror=()=>no(new Error('load'));document.head.append(t)})}
+async function saveXlsx(headers,rows,sheet,defName){
+  const MIME='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  let handle=null;
+  if(window.showSaveFilePicker){
+    try{handle=await showSaveFilePicker({suggestedName:defName+'.xlsx',types:[{description:'Excel',accept:{[MIME]:['.xlsx']}}]})}
+    catch(e){if(e.name==='AbortError')return}
+  }
+  try{await loadScript('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js')}catch(e){alert('بارگذاری ابزار ساخت اکسل انجام نشد. اینترنت یا فیلترشکن را بررسی کنید.');return}
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet(sheet,{views:[{rightToLeft:true,state:'frozen',ySplit:1}]});
+  ws.addRow(headers);rows.forEach(r=>ws.addRow(r.map(v=>v==null?'':v)));
+  const bd={style:'thin',color:{argb:'FF000000'}};
+  ws.eachRow((row,n)=>row.eachCell({includeEmpty:true},c=>{
+    c.border={top:bd,left:bd,bottom:bd,right:bd};
+    c.alignment={horizontal:'center',vertical:'middle',wrapText:true};
+    if(n===1){c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFF00'}};c.font={bold:true,color:{argb:'FF000000'}}}}));
+  headers.forEach((h,i)=>{let m=String(h).length;rows.forEach(r=>{m=Math.max(m,String(r[i]??'').length)});ws.getColumn(i+1).width=Math.min(40,m+4)});
+  const buf=await wb.xlsx.writeBuffer();const blob=new Blob([buf],{type:MIME});
+  if(handle){const w=await handle.createWritable();await w.write(blob);await w.close();return}
+  const nm=prompt('نام فایل را وارد کنید:',defName);if(nm===null)return;
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=((nm.trim()||defName).replace(/[\\/:*?"<>|]/g,'_'))+'.xlsx';a.click();URL.revokeObjectURL(a.href);
+}
+const jn=v=>Array.isArray(v)?v.join('، '):v;
+$('#ex').onclick=()=>{
+  const C=[['نام و نام خانوادگی','full_name'],['نام کاربری','username'],['کد ملی','national_id'],['کد پرسنلی','personnel_code'],['مدرک','degree'],['رشته تحصیلی','field_of_study'],['رشته تدریس','teaching_field'],['سمت','position'],['سابقه خدمت (سال)','service_years'],['پایه‌های تدریس','grades'],['روزهای همکاری','work_days'],['نام همسر','spouse_name'],['شغل همسر','spouse_job'],['تلفن همسر','spouse_phone'],['تعداد فرزند','children'],['آدرس','address'],['تلفن همراه','mobile'],['تلفن ثابت','home_phone'],['تلفن اضطراری','emergency_phone']];
+  saveXlsx([...C.map(c=>c[0]),'وضعیت'],list.map(s=>[...C.map(c=>jn(s[c[1]])),s.approved?'تأییدشده':'در انتظار']),'دبیران','اطلاعات-دبیران');
+};
+$('#sex').onclick=()=>{
+  const C=[['نام و نام خانوادگی','full_name'],['کد ملی','national_id'],['تاریخ تولد','birth_date'],['تلفن همراه پدر','father_mobile'],['تلفن همراه مادر','mother_mobile'],['تلفن ثابت','home_phone']];
+  const FX=SEC.flatMap(x=>x[1]);
+  saveXlsx([...C.map(c=>c[0]),'عکس',...FX.map(x=>x[1])],students.map(s=>[...C.map(c=>s[c[1]]),s.photo_path?'دارد':'ندارد',...FX.map(([k])=>jn((s.student_extra||{})[k]))]),'دانش‌آموزان','اطلاعات-دانش-آموزان');
+};
 
 // ---- مدارک ----
 const CATS={birth_certificate:'شناسنامه (همه صفحات)',national_card:'کارت ملی',appreciation:'تقدیرنامه',inservice:'لیست دوره‌های ضمن خدمت',plan_daily:'طرح درس روزانه',plan_annual:'طرح درس سالانه',other:'سایر مدارک'};
@@ -563,15 +592,6 @@ function renderAdmin(){
 }
 $('#q').oninput=renderAdmin;$('#fl').onclick=()=>{onlyPending=!onlyPending;renderAdmin()};
 $('#rf').onclick=async()=>{await loadList();renderAdmin()};
-$('#ex').onclick=()=>{
-  const H=['نام','ایمیل','کد ملی','کد پرسنلی','مدرک','رشته تحصیلی','رشته تدریس','سمت','سابقه خدمت (سال)','پایه‌های تدریس','روزهای همکاری','نام همسر','شغل همسر','تلفن همسر','تعداد فرزند','آدرس','همراه','تلفن ثابت','تلفن اضطراری','وضعیت'];
-  const K=['full_name','email','national_id','personnel_code','degree','field_of_study','teaching_field','position','service_years','grades','work_days','spouse_name','spouse_job','spouse_phone','children','address','mobile','home_phone','emergency_phone'];
-  const txt=new Set(['national_id','personnel_code','mobile','home_phone','emergency_phone','spouse_phone']);
-  const cell=(v,t)=>{v=Array.isArray(v)?v.join('، '):String(v??'');v=v.replace(/"/g,'""');return t&&v?`"=""${v}"""`:`"${v}"`};
-  const rows=list.map(s=>[...K.map(k=>cell(s[k],txt.has(k))),cell(s.approved?'تأییدشده':'در انتظار')].join(','));
-  const blob=new Blob(['\ufeff'+[H.map(h=>`"${h}"`).join(','),...rows].join('\r\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='staff.csv';a.click();URL.revokeObjectURL(a.href);
-};
 </script>
 </body>
 </html>
