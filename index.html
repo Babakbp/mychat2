@@ -43,6 +43,9 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 .tw{overflow-x:auto}.det{background:var(--bg);font-size:13px;color:var(--mu)}
 .tag{padding:2px 10px;border-radius:12px;font-size:12px;background:var(--ot)}
 .hide{display:none}
+.stk{font-size:56px;line-height:1.2}
+.m img{max-width:100%;max-height:240px;border-radius:8px;display:block;margin-top:4px}
+.m a{color:var(--pr)}
 #auth{max-width:380px;margin:40px auto}
 </style>
 </head>
@@ -51,11 +54,21 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 
 <main>
 <section id="auth" class="card">
-<h3 style="margin-top:0">ورود / ثبت‌نام</h3>
-<label>ایمیل</label><input id="em" type="email" class="ltr" autocomplete="email">
-<label style="margin-top:8px">رمز عبور (حداقل ۸ نویسه)</label><input id="pw" type="password" class="ltr" autocomplete="current-password">
+<div id="loginbox">
+<h3 style="margin-top:0">ورود</h3>
+<label>نام کاربری (کد پرسنلی)</label><input id="un" class="ltr" autocomplete="username">
+<label style="margin-top:8px">رمز عبور (برای بار اول: همان کد پرسنلی)</label><input id="pw" type="password" class="ltr" autocomplete="current-password">
 <div class="err" id="aerr"></div>
-<div class="row"><button class="btn" id="li">ورود</button><button class="btn sec" id="su">ثبت‌نام اولیه</button><button class="btn sec sm" id="fp">فراموشی رمز</button></div>
+<div class="row"><button class="btn" id="li">ورود</button><button class="btn sec" id="showreg">ثبت‌نام اولیه</button></div>
+</div>
+<div id="regbox" class="hide">
+<h3 style="margin-top:0">ثبت‌نام اولیه همکار</h3>
+<label>کد پرسنلی (۸ رقم)</label><input id="rc" class="ltr" inputmode="numeric" maxlength="8">
+<label style="margin-top:8px">نام و نام خانوادگی</label><input id="rn">
+<label style="margin-top:8px">تلفن همراه</label><input id="rm" class="ltr" inputmode="tel">
+<div class="err" id="rerr"></div>
+<div class="row"><button class="btn" id="rb">ثبت درخواست</button><button class="btn sec" id="backlogin">بازگشت به ورود</button></div>
+</div>
 </section>
 
 <div id="app" class="hide">
@@ -98,10 +111,13 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <section id="v-chat" class="card hide">
 <div id="chatlock" class="banner wn hide">گفتگو پس از تأیید مدیر فعال می‌شود.</div>
 <div id="msgs"></div>
-<div id="cf"><input id="ct" placeholder="پیام خود را بنویسید…" maxlength="1000"><button class="btn" id="cs">ارسال</button></div>
+<div id="sp" class="chips hide" style="margin-top:10px"></div>
+<div id="cf"><button class="btn sec" id="sk" title="استیکر">😀</button><button class="btn sec" id="at" title="ارسال فایل">📎</button><input type="file" id="fi" class="hide"><input id="ct" placeholder="پیام خود را بنویسید…" maxlength="1000"><button class="btn" id="cs">ارسال</button></div>
 </section>
 
 <section id="v-admin" class="card hide">
+<h3 style="margin-top:0">درخواست‌های ثبت‌نام</h3><div id="regs" class="tw" style="margin-bottom:8px"></div>
+<h3>همکاران</h3>
 <div class="row" style="margin-bottom:10px">
 <input id="q" placeholder="جستجو: نام، کد ملی، کد پرسنلی…" style="flex:1;min-width:180px">
 <button class="btn sec" id="rf">بازخوانی</button>
@@ -126,8 +142,11 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 
 <script>
 // ===== تنظیمات: مقادیر را از Supabase > Project Settings > API کپی کنید =====
-const SUPABASE_URL='https://yxtwcrrcydcanbshpovf.supabase.co';
-const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4dHdjcnJjeWRjYW5ic2hwb3ZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NzkyMDIsImV4cCI6MjEwNjU1NTIwMn0.EyKpBsbSvu2zsOuhcW9kIzjlZV8tBexy8gHBoET5uWc';
+const SUPABASE_URL='PASTE_PROJECT_URL_HERE';
+const SUPABASE_ANON_KEY='PASTE_ANON_PUBLIC_KEY_HERE';
+// ایمیل داخلی حساب‌ها (ایمیل واقعی ارسال نمی‌شود). از نشانی Gmail خودتان استفاده می‌شود:
+const EMAIL_BASE='babakbahramipour', EMAIL_DOMAIN='gmail.com';
+const authEmail=c=>`${EMAIL_BASE}+sp${c}@${EMAIL_DOMAIN}`;
 // ============================================================================
 let sb,initErr='';
 try{if(typeof supabase==='undefined')initErr='lib';else if(!/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(SUPABASE_URL))initErr='url';else sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY)}catch(e){initErr='url'}
@@ -145,24 +164,38 @@ const checked=id=>[...document.querySelectorAll(id+' input:checked')].map(i=>i.v
 function validId(c){if(!/^\d{10}$/.test(c)||/^(\d)\1{9}$/.test(c))return false;let s=0;for(let i=0;i<9;i++)s+=+c[i]*(10-i);const r=s%11;return +c[9]===(r<2?r:11-r)}
 
 // ---- ورود و ثبت‌نام ----
-const cred=()=>({email:$('#em').value.trim(),password:$('#pw').value});
 function aerr(m,good){const e=$('#aerr');e.textContent=m;e.style.color=good?'var(--ok)':'#c0392b'}
-$('#li').onclick=async()=>{aerr('در حال ورود…',true);try{const {error}=await sb.auth.signInWithPassword(cred());aerr(error?(/Invalid login/i.test(error.message)?'ایمیل یا رمز نادرست است.':/not confirmed/i.test(error.message)?'ایمیل هنوز تأیید نشده است.':'خطا: '+error.message):'')}catch(e){aerr('اتصال به Supabase برقرار نشد. اینترنت یا فیلترشکن را بررسی کنید.')}};
-$('#su').onclick=async()=>{const c=cred();if(c.password.length<8){aerr('رمز باید حداقل ۸ نویسه باشد.');return}
-  const {data,error}=await sb.auth.signUp(c);
-  if(error)aerr('ثبت‌نام انجام نشد: '+error.message);
-  else if(!data.session)aerr('ثبت‌نام انجام شد. ایمیل خود را برای تأیید بررسی کنید و سپس وارد شوید.',true)};
-$('#fp').onclick=async()=>{const e=$('#em').value.trim();if(!e){aerr('ابتدا ایمیل را وارد کنید.');return}
-  await sb.auth.resetPasswordForEmail(e,{redirectTo:location.href.split('#')[0]});aerr('اگر این ایمیل ثبت شده باشد، لینک بازیابی ارسال شد.',true)};
+$('#li').onclick=async()=>{
+  const u=dig($('#un').value);let p=$('#pw').value;if(/^[0-9۰-۹٠-٩]+$/.test(p))p=dig(p);
+  if(!u||!p)return;aerr('در حال ورود…',true);
+  try{const {data:em}=await sb.rpc('login_email',{u});
+    if(!em){aerr('نام کاربری یا رمز نادرست است، یا ثبت‌نام شما هنوز تأیید نشده است.');return}
+    const {error}=await sb.auth.signInWithPassword({email:em,password:p});
+    aerr(error?(/Invalid login/i.test(error.message)?'نام کاربری یا رمز نادرست است.':'خطا: '+error.message):'')}
+  catch(e){aerr('اتصال به Supabase برقرار نشد. اینترنت یا فیلترشکن را بررسی کنید.')}};
+$('#pw').onkeydown=e=>{if(e.key==='Enter')$('#li').click()};
+$('#showreg').onclick=()=>{$('#loginbox').classList.add('hide');$('#regbox').classList.remove('hide')};
+$('#backlogin').onclick=()=>{$('#regbox').classList.add('hide');$('#loginbox').classList.remove('hide')};
+$('#rb').onclick=async()=>{
+  const c=dig($('#rc').value),n=$('#rn').value.trim(),m=dig($('#rm').value),e=$('#rerr');e.style.color='#c0392b';e.textContent='';
+  if(!/^\d{8}$/.test(c)){e.textContent='کد پرسنلی باید دقیقاً ۸ رقم باشد.';return}
+  if(!n||!m){e.textContent='نام و تلفن همراه را وارد کنید.';return}
+  const {data,error}=await sb.rpc('register_staff',{p_code:c,p_name:n,p_mobile:m});
+  if(error){e.textContent='ثبت نشد: '+error.message;return}
+  if(data==='exists'){e.textContent='برای این کد پرسنلی قبلاً درخواست ثبت شده است.';return}
+  if(data!=='ok'){e.textContent='اطلاعات نامعتبر است.';return}
+  e.style.color='var(--ok)';e.textContent='درخواست شما ثبت شد. پس از تأیید مدیر، با کد پرسنلی (به‌عنوان نام کاربری و رمز اولیه) وارد شوید.'};
 $('#out').onclick=()=>sb.auth.signOut();
 $('#pb').onclick=async()=>{const a=$('#np1').value,e=$('#perr');e.style.color='#c0392b';
   if(a.length<8){e.textContent='رمز باید حداقل ۸ نویسه باشد.';return}
   if(a!==$('#np2').value){e.textContent='تکرار رمز مطابقت ندارد.';return}
+  if(me&&a===me.personnel_code){e.textContent='رمز جدید نباید همان کد پرسنلی باشد.';return}
   const {error}=await sb.auth.updateUser({password:a});
   if(error){e.textContent='تغییر رمز انجام نشد: '+error.message;return}
-  $('#np1').value=$('#np2').value='';e.style.color='var(--ok)';e.textContent='رمز با موفقیت تغییر کرد.'};
+  await sb.rpc('password_changed');if(me)me.must_change=false;
+  $('#np1').value=$('#np2').value='';e.style.color='var(--ok)';e.textContent='رمز با موفقیت تغییر کرد.';render()};
 
-if(initErr){['li','su','fp'].forEach(i=>$('#'+i).disabled=true);aerr(initErr==='lib'?'کتابخانه Supabase بارگذاری نشد. اینترنت یا فیلترشکن را بررسی کنید.':'SUPABASE_URL درست وارد نشده است. باید شبیه https://xxxx.supabase.co باشد، بدون / آخر و بدون rest/v1.')}
+if(initErr){['li','rb'].forEach(i=>$('#'+i).disabled=true);aerr(initErr==='lib'?'کتابخانه Supabase بارگذاری نشد. اینترنت یا فیلترشکن را بررسی کنید.':'SUPABASE_URL درست وارد نشده است. باید شبیه https://xxxx.supabase.co باشد، بدون / آخر و بدون rest/v1.')}
 else sb.auth.onAuthStateChange((ev,s)=>{if(ev==='TOKEN_REFRESHED')return;if(ev==='PASSWORD_RECOVERY')tab='acct';setTimeout(()=>onSession(s),0)});
 
 async function onSession(s){
@@ -182,19 +215,22 @@ const isAdm=()=>me?.role==='admin',canChat=()=>me?.approved||isAdm();
 function render(){
   if(!me)return;
   const tabs=[['form','مشخصات من'],['chat','گفتگو']];if(isAdm())tabs.push(['admin','پنل مدیر']);tabs.push(['acct','حساب']);
+  if(me.must_change){tabs.length=0;tabs.push(['acct','حساب']);tab='acct'}
   if(!tabs.some(t=>t[0]===tab))tab='form';
   $('#nav').innerHTML=tabs.map(([k,l])=>`<button class="${k===tab?'on':''}" data-t="${k}">${l}</button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
   ['form','chat','admin','acct'].forEach(k=>$('#v-'+k).classList.toggle('hide',k!==tab));
   $('#who').textContent=isAdm()?'مدیر':(me.approved?'همکار تأییدشده':'ثبت‌نام اولیه');
   const b=$('#banner');
-  if(isAdm()){b.className='banner ok';b.textContent='شما با دسترسی مدیر وارد شده‌اید.'}
+  if(me.must_change){b.className='banner wn';b.textContent='برای ادامه، رمز عبور پیش‌فرض را در همین صفحه تغییر دهید.'}
+  else if(isAdm()){b.className='banner ok';b.textContent='شما با دسترسی مدیر وارد شده‌اید.'}
   else if(!me.full_name){b.className='banner wn';b.textContent='برای تکمیل ثبت‌نام، فرم مشخصات را پر و ثبت کنید.'}
   else if(!me.approved){b.className='banner wn';b.textContent='اطلاعات شما ثبت شد و در انتظار تأیید مدیر است.'}
   else{b.className='banner ok';b.textContent='ثبت‌نام شما تأیید شده است.'}
   if(!filled){TXT.forEach(k=>$('#'+k).value=me[k]??'');
     document.querySelectorAll('#days input').forEach(i=>i.checked=(me.work_days||[]).includes(i.value));
     document.querySelectorAll('#grades input').forEach(i=>i.checked=(me.grades||[]).includes(i.value));filled=true}
+  $('#personnel_code').disabled=!isAdm();
   $('#chatlock').classList.toggle('hide',canChat());$('#cf').classList.toggle('hide',!canChat());
   renderChat();if(isAdm())renderAdmin();
 }
@@ -208,7 +244,7 @@ $('#save').onclick=async()=>{
   if(!/^\d{8}$/.test(d.personnel_code)){e.textContent='کد پرسنلی باید دقیقاً ۸ رقم باشد.';return}
   const {error}=await sb.from('profiles').update(d).eq('id',me.id);
   if(error){e.textContent='ذخیره نشد: '+error.message;return}
-  me={...me,...d};e.style.color='var(--ok)';e.textContent='اطلاعات با موفقیت ذخیره شد.';render();setTimeout(()=>e.textContent='',3000);
+  me={...me,...d};if(isAdm()){const r=await sb.from('profiles').select('*').eq('id',me.id).single();if(r.data)me=r.data}e.style.color='var(--ok)';e.textContent='اطلاعات با موفقیت ذخیره شد.';render();setTimeout(()=>e.textContent='',3000);
 };
 
 // ---- گفتگو ----
@@ -219,22 +255,51 @@ function subscribe(){
    .on('postgres_changes',{event:'DELETE',schema:'public',table:'messages'},p=>{msgs=msgs.filter(m=>m.id!==p.old.id);renderChat()})
    .subscribe();
 }
+const urlCache={};
+async function fileUrl(p,dl){const k=p+(dl?'|d':'');if(!urlCache[k]){const {data}=await sb.storage.from('chat-files').createSignedUrl(p,3600,dl?{download:true}:undefined);urlCache[k]=data?.signedUrl||''}return urlCache[k]}
 function renderChat(){
   const box=$('#msgs'),near=box.scrollHeight-box.scrollTop-box.clientHeight<80;box.innerHTML='';
   if(!canChat())return;
   msgs.forEach(m=>{const d=document.createElement('div');d.className='m'+(m.user_id===me.id?' me':'');
-    const n=document.createElement('b');n.textContent=m.author||'';const t=document.createElement('span');t.textContent=m.body;d.append(n,t);
-    if(isAdm()){const x=document.createElement('span');x.className='x';x.textContent='✕';x.onclick=()=>sb.from('messages').delete().eq('id',m.id);d.append(x)}
+    const n=document.createElement('b');n.textContent=m.author||'';d.append(n);
+    if(m.kind==='sticker'){const s=document.createElement('div');s.className='stk';s.textContent=m.body;d.append(s)}
+    else if(m.kind==='file'){const a=document.createElement('a');a.textContent='📎 '+(m.file_name||'فایل');a.href='#';
+      a.onclick=async e=>{e.preventDefault();const u=await fileUrl(m.file_path,true);if(u)window.open(u,'_blank')};d.append(a);
+      if((m.file_type||'').startsWith('image/'))fileUrl(m.file_path).then(u=>{if(!u)return;const i=document.createElement('img');i.src=u;i.onload=()=>{if(near)box.scrollTop=box.scrollHeight};a.after(i)})}
+    else{const t=document.createElement('span');t.textContent=m.body;d.append(t)}
+    if(isAdm()){const x=document.createElement('span');x.className='x';x.textContent='✕';
+      x.onclick=async()=>{if(m.file_path)await sb.storage.from('chat-files').remove([m.file_path]);sb.from('messages').delete().eq('id',m.id)};d.append(x)}
     box.append(d)});
   if(near)box.scrollTop=box.scrollHeight;
 }
-async function send(){const t=$('#ct').value.trim();if(!t)return;$('#ct').value='';
-  const {error}=await sb.from('messages').insert({body:t});if(error)$('#ct').value=t}
+async function sendRow(row){const {error}=await sb.from('messages').insert(row);if(error)alert('ارسال نشد: '+error.message)}
+async function send(){const t=$('#ct').value.trim();if(!t)return;$('#ct').value='';const {error}=await sb.from('messages').insert({body:t});if(error)$('#ct').value=t}
 $('#cs').onclick=send;$('#ct').onkeydown=e=>{if(e.key==='Enter')send()};
+const STK=['👍','👏','🙏','❤️','😂','😍','😢','😮','🎉','✅','❌','🌹','📚','✏️','🏫','⏰'];
+$('#sp').innerHTML=STK.map(x=>`<button class="btn sec" data-s="${x}" style="font-size:26px">${x}</button>`).join('');
+$('#sp').querySelectorAll('button').forEach(b=>b.onclick=()=>{$('#sp').classList.add('hide');sendRow({kind:'sticker',body:b.dataset.s})});
+$('#sk').onclick=()=>$('#sp').classList.toggle('hide');
+$('#at').onclick=()=>$('#fi').click();
+$('#fi').onchange=async()=>{const f=$('#fi').files[0];$('#fi').value='';if(!f)return;
+  if(f.size>10*1024*1024){alert('حجم فایل نباید بیشتر از ۱۰ مگابایت باشد.');return}
+  const ext=(f.name.split('.').pop()||'bin').replace(/[^a-zA-Z0-9]/g,'').slice(0,8)||'bin';
+  const path=`${me.id}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const {error}=await sb.storage.from('chat-files').upload(path,f,{contentType:f.type||'application/octet-stream'});
+  if(error){alert('آپلود فایل انجام نشد: '+error.message);return}
+  sendRow({kind:'file',body:'',file_path:path,file_name:f.name.slice(0,120),file_type:f.type||''})};
 
 // ---- پنل مدیر ----
-async function loadList(){const {data}=await sb.from('profiles').select('*').eq('role','teacher').order('created_at');list=data||[]}
+let regs=[];
+async function loadList(){const {data}=await sb.from('profiles').select('*').eq('role','teacher').order('created_at');list=data||[];const r=await sb.from('registrations').select('*').eq('status','pending').order('created_at');regs=r.data||[]}
 function renderAdmin(){
+  $('#regs').innerHTML=regs.length?`<table><tbody>${regs.map(r=>`<tr><td>${esc(r.full_name)}</td><td dir="ltr">${esc(r.personnel_code)}</td><td dir="ltr">${esc(r.mobile)}</td><td><button class="btn sm" data-ra="${esc(r.personnel_code)}">تأیید</button> <button class="btn sec sm" data-rr="${esc(r.personnel_code)}">رد</button></td></tr>`).join('')}</tbody></table>`:'<div class="banner">درخواست جدیدی وجود ندارد.</div>';
+  $('#regs').querySelectorAll('[data-ra]').forEach(b=>b.onclick=async()=>{b.disabled=true;const c=b.dataset.ra;
+    const r=await sb.rpc('set_registration',{p_code:c,p_status:'approved'});if(r.error){alert(r.error.message);b.disabled=false;return}
+    const tmp=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+    const u=await tmp.auth.signUp({email:authEmail(c),password:c});
+    if(u.error){await sb.rpc('set_registration',{p_code:c,p_status:'pending'});alert('ساخت حساب انجام نشد: '+u.error.message);b.disabled=false;return}
+    await loadList();renderAdmin()});
+  $('#regs').querySelectorAll('[data-rr]').forEach(b=>b.onclick=async()=>{await sb.rpc('set_registration',{p_code:b.dataset.rr,p_status:'rejected'});await loadList();renderAdmin()});
   const q=dig($('#q').value);
   let L=list.filter(s=>!q||[s.full_name,s.national_id,s.personnel_code,s.teaching_field].some(v=>String(v||'').includes(q)));
   if(onlyPending)L=L.filter(s=>!s.approved);
