@@ -126,10 +126,11 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 
 <script>
 // ===== تنظیمات: مقادیر را از Supabase > Project Settings > API کپی کنید =====
-const SUPABASE_URL=https://yxtwcrrcydcanbshpovf.supabase.co;
-const SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4dHdjcnJjeWRjYW5ic2hwb3ZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NzkyMDIsImV4cCI6MjEwNjU1NTIwMn0.EyKpBsbSvu2zsOuhcW9kIzjlZV8tBexy8gHBoET5uWc;
+const SUPABASE_URL='PASTE_PROJECT_URL_HERE';
+const SUPABASE_ANON_KEY='PASTE_ANON_PUBLIC_KEY_HERE';
 // ============================================================================
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let sb,initErr='';
+try{if(typeof supabase==='undefined')initErr='lib';else if(!/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(SUPABASE_URL))initErr='url';else sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY)}catch(e){initErr='url'}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dig=s=>String(s||'').replace(/[۰-۹]/g,d=>d.charCodeAt(0)-1776).replace(/[٠-٩]/g,d=>d.charCodeAt(0)-1632).trim();
@@ -146,7 +147,7 @@ function validId(c){if(!/^\d{10}$/.test(c)||/^(\d)\1{9}$/.test(c))return false;l
 // ---- ورود و ثبت‌نام ----
 const cred=()=>({email:$('#em').value.trim(),password:$('#pw').value});
 function aerr(m,good){const e=$('#aerr');e.textContent=m;e.style.color=good?'var(--ok)':'#c0392b'}
-$('#li').onclick=async()=>{const {error}=await sb.auth.signInWithPassword(cred());aerr(error?'ایمیل یا رمز نادرست است.':'')};
+$('#li').onclick=async()=>{aerr('در حال ورود…',true);try{const {error}=await sb.auth.signInWithPassword(cred());aerr(error?(/Invalid login/i.test(error.message)?'ایمیل یا رمز نادرست است.':/not confirmed/i.test(error.message)?'ایمیل هنوز تأیید نشده است.':'خطا: '+error.message):'')}catch(e){aerr('اتصال به Supabase برقرار نشد. اینترنت یا فیلترشکن را بررسی کنید.')}};
 $('#su').onclick=async()=>{const c=cred();if(c.password.length<8){aerr('رمز باید حداقل ۸ نویسه باشد.');return}
   const {data,error}=await sb.auth.signUp(c);
   if(error)aerr('ثبت‌نام انجام نشد: '+error.message);
@@ -161,14 +162,16 @@ $('#pb').onclick=async()=>{const a=$('#np1').value,e=$('#perr');e.style.color='#
   if(error){e.textContent='تغییر رمز انجام نشد: '+error.message;return}
   $('#np1').value=$('#np2').value='';e.style.color='var(--ok)';e.textContent='رمز با موفقیت تغییر کرد.'};
 
-sb.auth.onAuthStateChange((ev,s)=>{if(ev==='TOKEN_REFRESHED')return;if(ev==='PASSWORD_RECOVERY')tab='acct';setTimeout(()=>onSession(s),0)});
+if(initErr){['li','su','fp'].forEach(i=>$('#'+i).disabled=true);aerr(initErr==='lib'?'کتابخانه Supabase بارگذاری نشد. اینترنت یا فیلترشکن را بررسی کنید.':'SUPABASE_URL درست وارد نشده است. باید شبیه https://xxxx.supabase.co باشد، بدون / آخر و بدون rest/v1.')}
+else sb.auth.onAuthStateChange((ev,s)=>{if(ev==='TOKEN_REFRESHED')return;if(ev==='PASSWORD_RECOVERY')tab='acct';setTimeout(()=>onSession(s),0)});
 
 async function onSession(s){
   if(chan){sb.removeChannel(chan);chan=null}
   if(!s){me=null;msgs=[];list=[];filled=false;$('#auth').classList.remove('hide');$('#app').classList.add('hide');$('#out').classList.add('hide');$('#who').classList.add('hide');return}
-  const {data}=await sb.from('profiles').select('*').eq('id',s.user.id).single();
+  const {data,error:pe}=await sb.from('profiles').select('*').eq('id',s.user.id).single();
   me=data;filled=false;
   $('#auth').classList.add('hide');$('#app').classList.remove('hide');$('#out').classList.remove('hide');$('#who').classList.remove('hide');
+  if(!me){$('#banner').className='banner wn';$('#banner').textContent='ورود انجام شد اما پروفایل شما خوانده نشد'+(pe?': '+pe.message:'')+'. مطمئن شوید schema.sql کامل اجرا شده و برای این کاربر ردیف پروفایل ساخته شده است.';return}
   if(me&&(me.approved||me.role==='admin')){await loadMsgs();subscribe()}
   if(me?.role==='admin')await loadList();
   render();
