@@ -295,10 +295,11 @@ $('#li').onclick=async()=>{
   const cre=ctx.scope==='creator';let p=$('#pw').value;if(/^[0-9۰-۹٠-٩]+$/.test(p))p=dig(p);
   const u=cre?'':dig($('#un').value);
   if((!cre&&!u)||!p)return;aerr('در حال ورود…',true);
-  try{const {data:em}=cre?await sb.rpc('creator_email'):await sb.rpc('login_email',{u,scope:ctx.scope});
-    if(!em){aerr('نام کاربری یا رمز نادرست است، یا ثبت‌نام شما هنوز تأیید نشده است.');return}
+  try{const {data:em,error:re}=cre?await sb.rpc('creator_email'):await sb.rpc('login_email',{u,scope:ctx.scope});
+    if(re){aerr('خطای دیتابیس: '+re.message+' — اگر پیام درباره «function» یا «schema cache» است، فایل schema_v9.sql را اجرا کنید و سپس دستور notify pgrst را بزنید.');return}
+    if(!em){aerr(cre?'حساب سازنده در دیتابیس پیدا نشد.':'نام کاربری در این بخش پیدا نشد، یا ثبت‌نام شما هنوز تأیید نشده است.');return}
     const {error}=await sb.auth.signInWithPassword({email:em,password:p});
-    aerr(error?(/Invalid login/i.test(error.message)?'نام کاربری یا رمز نادرست است.':'خطا: '+error.message):'')}
+    aerr(error?(/Invalid login/i.test(error.message)?'نام کاربری پیدا شد اما رمز نادرست است.':'خطا: '+error.message):'')}
   catch(e){aerr('اتصال به Supabase برقرار نشد. اینترنت یا فیلترشکن را بررسی کنید.')}};
 $('#pw').onkeydown=e=>{if(e.key==='Enter')$('#li').click()};
 $('#rb').onclick=async()=>{
