@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
-:root{--bg:#fffef6;--card:#fffbe0;--tx:#1d2433;--mu:#6b6a4f;--br:#e5dca3;--pr:#2457c5;--prt:#fff;--ok:#117a45;--wn:#a15c07;--me:#dfe9ff;--ot:#f4efcf}
+:root{--bg:#eef2f8;--card:#d3dcea;--tx:#1b2433;--mu:#4a5870;--br:#a9b7cc;--pr:#2457c5;--prt:#fff;--ok:#117a45;--wn:#a15c07;--me:#bcd0f2;--ot:#e4eaf4}
 .pwwrap{position:relative}
 .pwwrap input{padding-left:42px}
 .eye{position:absolute;left:6px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:18px;line-height:1;padding:4px;color:var(--tx)}
@@ -47,6 +47,8 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 .tw{overflow-x:auto}.det{background:var(--bg);font-size:13px;color:var(--mu)}
 .tag{padding:2px 10px;border-radius:12px;font-size:12px;background:var(--ot)}
 .hide{display:none}
+.osr{display:flex;gap:6px;margin-bottom:6px}
+.osr input:first-child{flex:1}
 .btn.big{padding:16px 28px;font-size:17px}
 .col{display:flex;flex-direction:column;gap:8px}
 .col .btn{width:100%}
@@ -110,17 +112,20 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <div class="grid">
 <div><label>مدرک تحصیلی *</label><select id="degree"><option value="">انتخاب کنید</option><option>دیپلم</option><option>فوق دیپلم</option><option>لیسانس</option><option>فوق لیسانس</option><option>دکتری</option></select></div>
 <div><label>رشته تحصیلی *</label><input id="field_of_study"></div>
-<div><label>سابقه خدمت (سال)</label><input id="service_years" type="number" min="0" max="60"></div>
+<div><label>سابقه خدمت (سال)</label><input id="service_years" class="ltr" inputmode="decimal"></div>
 </div>
 <h3>وضعیت خانوادگی</h3>
 <div class="grid">
+<div><label>وضعیت تاهل</label><select id="t_marital"><option value="">انتخاب کنید</option><option>متاهل</option><option>مجرد</option><option>معیل</option></select></div>
 <div><label>نام همسر</label><input id="spouse_name"></div>
 <div><label>شغل همسر</label><input id="spouse_job"></div>
 <div><label>تلفن همسر</label><input id="spouse_phone" class="ltr" inputmode="tel"></div>
-<div><label>تعداد فرزند</label><input id="children" type="number" min="0" max="30"></div>
+<div><label>تعداد فرزند</label><input id="children" class="ltr" inputmode="decimal"></div>
 </div>
 <h3>نشانی</h3>
 <label>آدرس محل سکونت *</label><textarea id="address" rows="3"></textarea>
+<div style="max-width:280px;margin-top:8px"><label>کد پستی (۱۰ رقم)</label><input id="t_postal" class="ltr" inputmode="numeric" maxlength="10"></div>
+<div id="t_extra"></div>
 <div class="err" id="ferr"></div>
 <div class="row"><button class="btn" id="save">ثبت اطلاعات</button><button class="btn sec" id="prt">🖨 چاپ / ذخیره PDF فرم مشخصات</button></div>
 </section>
@@ -133,7 +138,10 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <div class="grid">
 <div><label>رشته تدریس *</label><input id="teaching_field"></div>
 <div><label>سمت</label><input id="position"></div>
-<div><label>ساعت همکاری در هفته</label><input id="weekly_hours" type="number" min="0" max="80" step="0.5"></div>
+<div><label>وضعیت همکاری</label><select id="emp_status"><option value="">انتخاب کنید</option><option>رسمی</option><option>آزمایشی</option><option>پیمانی</option><option>قراردادی</option><option>حق التدریس</option><option>سرباز معلم</option><option>سایر</option></select></div>
+<div><label>ساعت تدریس در هفته (جمع موظف و غیرموظف)</label><input id="weekly_hours" class="ltr" inputmode="decimal"></div>
+<div><label>ساعت موظف</label><input id="mandatory_hours" class="ltr" inputmode="decimal"></div>
+<div><label>ساعت غیرموظف</label><input id="extra_hours" class="ltr" inputmode="decimal"></div>
 </div>
 <label style="margin-top:10px">پایه‌های تدریس</label><div class="chips" id="grades"></div>
 <label style="margin-top:10px">روزهای همکاری</label><div class="chips" id="days"></div>
@@ -239,10 +247,10 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dig=s=>String(s||'').replace(/[۰-۹]/g,d=>d.charCodeAt(0)-1776).replace(/[٠-٩]/g,d=>d.charCodeAt(0)-1632).trim();
 const DAYS=['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه'];
-const GR=['اول','دوم','سوم','چهارم','پنجم','ششم','هفتم','هشتم','نهم','دهم','یازدهم','دوازدهم'];
+const GR=['هفتم','هشتم','نهم'];
 const TXT=['first_name','last_name','national_id','personnel_code','mobile','home_phone','emergency_phone','degree','field_of_study','service_years','spouse_name','spouse_job','spouse_phone','children','address'];
 const NUM=['service_years','children','weekly_hours'];
-let me=null,tab='form',list=[],msgs=[],open=null,onlyPending=false,chan=null,filled=false,sfilled=false,students=[],sopen=null,mems=[],chatSchool=null,coopSel=null;
+let me=null,tab='form',list=[],msgs=[],open=null,onlyPending=false,chan=null,filled=false,sfilled=false,lastUid=null,students=[],sopen=null,mems=[],chatSchool=null,coopSel=null;
 const chips=(id,arr)=>$(id).innerHTML=arr.map(d=>`<label><input type="checkbox" value="${d}">${d}</label>`).join('');
 chips('#days',DAYS);chips('#grades',GR);
 const checked=id=>[...document.querySelectorAll(id+' input:checked')].map(i=>i.value);
@@ -302,7 +310,7 @@ $('#rb').onclick=async()=>{
   if(data==='exists'){e.textContent='برای این کد قبلاً درخواست ثبت شده است.';return}
   if(data!=='ok'){e.textContent='اطلاعات نامعتبر است.';return}
   e.style.color='var(--ok)';e.textContent='درخواست شما برای '+ctx.regs.map(schName).join(' و ')+' ثبت شد و برای مدیر ارسال می‌شود. پس از تأیید، با '+(st?'کد ملی':'کد پرسنلی')+' (به‌عنوان نام کاربری و رمز اولیه) وارد شوید.'};
-$('#out').onclick=()=>sb.auth.signOut();
+$('#out').onclick=async()=>{try{await sb.auth.signOut({scope:'local'})}catch(e){}try{Object.keys(localStorage).filter(k=>k.startsWith('sb-')).forEach(k=>localStorage.removeItem(k))}catch(e){}tab='form';await onSession(null)};
 $('#pb').onclick=async()=>{const a=$('#np1').value,e=$('#perr');e.style.color='#c0392b';
   if(a.length<8){e.textContent='رمز باید حداقل ۸ نویسه باشد.';return}
   if(a!==$('#np2').value){e.textContent='تکرار رمز مطابقت ندارد.';return}
@@ -317,11 +325,11 @@ else sb.auth.onAuthStateChange((ev,s)=>{if(ev==='TOKEN_REFRESHED')return;if(ev==
 
 async function onSession(s){
   if(chan){sb.removeChannel(chan);chan=null}
-  if(!s){me=null;msgs=[];list=[];mems=[];filled=false;aview('a_home');$('#auth').classList.remove('hide');$('#app').classList.add('hide');$('#out').classList.add('hide');$('#who').classList.add('hide');return}
+  if(!s){me=null;msgs=[];list=[];mems=[];lastUid=null;filled=false;aview('a_home');$('#auth').classList.remove('hide');$('#app').classList.add('hide');$('#out').classList.add('hide');$('#who').classList.add('hide');return}
   const {data,error:pe}=await sb.from('profiles').select('*').eq('id',s.user.id).single();
   me=data;filled=false;sfilled=false;
   mems=[];if(me&&me.role==='teacher'){const rm=await sb.from('memberships').select('*').eq('user_id',me.id);mems=rm.data||[]}
-  if(me){chatSchool=me.role==='admin'?me.admin_school:((mems.find(x=>x.status==='approved')||{}).school||null);coopSel=(mems[0]||{}).school||null}
+  if(me){chatSchool=me.role==='admin'?me.admin_school:((mems.find(x=>x.status==='approved')||{}).school||null);coopSel=(mems[0]||{}).school||null;if(lastUid!==me.id){lastUid=me.id;tab=me.role==='creator'?'creator':me.role==='admin'?'admin':me.role==='student'?'stu':(mems.some(x=>x.status==='approved')?'chat':'form')}}
   $('#auth').classList.add('hide');$('#app').classList.remove('hide');$('#out').classList.remove('hide');$('#who').classList.remove('hide');
   if(!me){$('#banner').className='banner wn';$('#banner').textContent='ورود انجام شد اما پروفایل شما خوانده نشد'+(pe?': '+pe.message:'')+'. مطمئن شوید schema.sql کامل اجرا شده و برای این کاربر ردیف پروفایل ساخته شده است.';return}
   if(me&&canChat()){await loadMsgs();subscribe()}
@@ -334,8 +342,8 @@ async function onSession(s){
 const isAdm=()=>me?.role==='admin',isCre=()=>me?.role==='creator',canChat=()=>!!chatSchool&&(isAdm()||(me?.role==='teacher'&&mems.some(x=>x.status==='approved')));
 function render(){
   if(!me)return;
-  const tabs=[['form','مشخصات من'],['coop','همکاری در مدارس'],['docs','مدارک من'],['chat','گفتگو']];if(isAdm())tabs.push(['admin','پنل مدیر'],['students','دانش‌آموزان']);tabs.push(['acct','حساب']);
-  if(isAdm()){const i=tabs.findIndex(t=>t[0]==='coop');if(i>=0)tabs.splice(i,1)}
+  const tabs=[['chat','گفتگو'],['form','مشخصات من'],['coop','همکاری در مدارس'],['docs','مدارک من']];if(isAdm())tabs.push(['admin','پنل مدیر'],['students','دانش‌آموزان']);tabs.push(['acct','حساب']);
+  if(isAdm()){tabs.length=0;tabs.push(['admin','پنل مدیر'],['students','دانش‌آموزان'],['chat','گفتگو'],['form','مشخصات من'],['docs','مدارک من'],['acct','حساب'])}
   if(me.role==='student'){tabs.length=0;tabs.push(['stu','پرونده من'],['acct','حساب'])}
   if(isCre()){tabs.length=0;tabs.push(['creator','پنل سازنده'],['acct','حساب'])}
   if(me.must_change){tabs.length=0;tabs.push(['acct','حساب']);tab='acct'}
@@ -354,7 +362,7 @@ function render(){
   else if(!mems.some(x=>x.status==='approved')){b.className='banner wn';b.textContent='ثبت‌نام شما در انتظار تأیید مدیر مدرسه است.'}
   else{b.className='banner ok';b.textContent='ثبت‌نام شما تأیید شده است.'}
   if(!filled){TXT.forEach(k=>$('#'+k).value=me[k]??'');
-    filled=true}
+    fillT(me.teacher_extra||{});filled=true}
   $('#personnel_code').disabled=!isAdm();
   if(me.role==='student'&&!sfilled){fillStudent();sfilled=true}
   if(me.role!=='student'&&!isCre())showTPhoto();
@@ -374,6 +382,10 @@ $('#save').onclick=async()=>{
   if(!d.first_name||!d.last_name||!d.mobile||!d.degree||!d.field_of_study||!d.address){e.textContent='لطفاً همه فیلدهای ستاره‌دار را پر کنید.';return}
   if(!validId(d.national_id)){e.textContent='کد ملی معتبر نیست.';return}
   if(!/^\d{8}$/.test(d.personnel_code)){e.textContent='کد پرسنلی باید دقیقاً ۸ رقم باشد.';return}
+  const xr=collectT();if(xr.err){e.textContent=xr.err;return}
+  const mar=$('#t_marital').value,pc=dig($('#t_postal').value);
+  if(pc){const mm=vx.post(pc);if(mm){e.textContent='کد پستی: '+mm;return}}
+  d.teacher_extra={...xr.ex,...(mar?{marital_status:mar}:{}),...(pc?{postal_code:pc}:{})};
   const {error}=await sb.from('profiles').update(d).eq('id',me.id);
   if(error){e.textContent='ذخیره نشد: '+error.message;return}
   me={...me,...d};if(isAdm()){const r=await sb.from('profiles').select('*').eq('id',me.id).single();if(r.data)me=r.data}e.style.color='var(--ok)';e.textContent='اطلاعات با موفقیت ذخیره شد.';render();setTimeout(()=>e.textContent='',3000);
@@ -447,26 +459,49 @@ const vx={
  post:v=>(/^\d{10}$/.test(v)&&!/^(\d)\1{9}$/.test(v)&&!['1234567890','0123456789','9876543210'].includes(v))?'':'کد پستی باید ۱۰ رقم معتبر باشد (کد رند، تکراری یا فرضی پذیرفته نمی‌شود).',
  six:v=>/^\d{6}$/.test(v)?'':'سریال شناسنامه ۶ رقم است.'
 };
-function buildExtra(){
-  $('#s_extra').innerHTML=SEC.map(([t,f],i)=>`<details class="banner" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">${t}</summary>${i===5?'<div class="banner wn" style="margin-top:8px">اطلاعات سلامت فقط برای مدیر مدرسه قابل مشاهده است و برای ایمنی دانش‌آموز ثبت می‌شود.</div>':''}<div class="grid" style="margin-top:10px">${f.map(([k,l,ty,o])=>
-    ty==='a'?`<div style="grid-column:1/-1"><label>${l}</label><textarea id="x_${k}" rows="2"></textarea></div>`
-    :ty==='m'?`<div style="grid-column:1/-1"><label>${l}</label><div class="chips" id="x_${k}">${o.map(v=>`<label><input type="checkbox" value="${v}">${v}</label>`).join('')}</div></div>`
-    :ty==='s'?`<div><label>${l}</label><select id="x_${k}"><option value="">انتخاب کنید</option>${o.map(v=>`<option>${v}</option>`).join('')}</select></div>`
-    :`<div><label>${l}</label><input id="x_${k}"${NUMT.includes(ty)||ty==='d'?' class="ltr" inputmode="numeric"':''}></div>`).join('')}</div></details>`).join('');
+const fv=v=>Array.isArray(v)?v.map(x=>(x&&typeof x==='object')?`${x.name}${x.hours!=null&&x.hours!==''?' ('+x.hours+' ساعت)':''}`:x).join('، '):(v??'');
+const normV=(ty,v)=>{if(ty==='sheba')return dig(v).toUpperCase().replace(/[\s-]/g,'');if(ty==='card'||ty==='acct')return dig(v).replace(/[\s-]/g,'');if(NUMT.includes(ty)||ty==='d')return dig(v);return v.trim()};
+vx.card=v=>{if(!/^\d{16}$/.test(v))return 'شماره کارت باید ۱۶ رقم باشد.';let t=0;for(let i=0;i<16;i++){let d=+v[i];if(i%2===0){d*=2;if(d>9)d-=9}t+=d}return t%10===0?'':'شماره کارت معتبر نیست.'};
+vx.acct=v=>/^\d{5,25}$/.test(v)?'':'شماره حساب فقط عدد (۵ تا ۲۵ رقم) باشد.';
+vx.sheba=v=>{if(!/^IR\d{24}$/.test(v))return 'شماره شبا باید به شکل IR و ۲۴ رقم باشد.';const r=(v.slice(4)+v.slice(0,4)).replace(/[A-Z]/g,c=>c.charCodeAt(0)-55);let rem=0;for(const ch of r)rem=(rem*10+ +ch)%97;return rem===1?'':'شماره شبا معتبر نیست.'};
+const BANKS=['ملی','ملت','صادرات','سپه','تجارت','رفاه کارگران','پاسارگاد','پارسیان','اقتصاد نوین','سامان','کشاورزی','مسکن','پست بانک','دی','شهر','آینده','سینا','سرمایه','گردشگری','قرض‌الحسنه مهر ایران','قرض‌الحسنه رسالت','سایر'];
+const TSEC=[
+ ['مشخصات شناسنامه‌ای',[['cert_number','شماره شناسنامه','t'],['cert_serial','سریال شناسنامه','t'],['birth_date','تاریخ تولد (مثال: ۱۳۶۵/۰۳/۱۰)','d'],['birth_place','محل تولد','t'],['religion','دین و مذهب','s',['اسلام / شیعه','اسلام / سنی','مسیحی','یهودی','زرتشتی','سایر']],['special_status','وضعیت (جانباز / آزاده / خانواده شهید)','m',['جانباز','آزاده','خانواده شهید']]]],
+ ['مدرسه اصلی و سایر مدارس',[['main_school','نام مدرسه اصلی (محل خدمت اصلی)','t'],['other_schools','سایر مدارس و میزان ساعت همکاری در هفته','o']]],
+ ['سلامت و بیمه',[['blood_group','گروه خونی','s',['A+','A-','B+','B-','AB+','AB-','O+','O-','نامشخص']],['vision','وضعیت بینایی','s',['سالم','نیازمند عینک','آستیگمات']],['hearing','وضعیت شنوایی','s',['سالم','نیازمند سمعک','دارای افت شنوایی']],['insurance_type','نوع بیمه','s',['تأمین اجتماعی','خدمات درمانی','نیروهای مسلح','بیمه تکمیلی','ندارد','سایر']],['special_illness','بیماری خاص','a']]],
+ ['اطلاعات حساب بانکی',[['bank_name','نام بانک','s',BANKS],['card_number','شماره کارت (۱۶ رقم)','card'],['sheba','شماره شبا (مثال: IR و ۲۴ رقم)','sheba'],['account_number','شماره حساب','acct']]]
+];
+const TSTATIC=[['marital_status','وضعیت تاهل'],['postal_code','کد پستی']];
+function osRow(box,n,h){const r=document.createElement('div');r.className='osr';r.innerHTML='<input placeholder="نام مدرسه"><input class="ltr" inputmode="decimal" placeholder="ساعت در هفته" style="max-width:130px"><button type="button" class="btn sec sm">✕</button>';r.children[0].value=n||'';r.children[1].value=h??'';r.children[2].onclick=()=>r.remove();box.append(r)}
+function buildSec(S,el,pre){
+  $(el).innerHTML=S.map(([t,f])=>`<details class="banner" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">${t}</summary>${t.includes('سلامت')?'<div class="banner wn" style="margin-top:8px">این اطلاعات فقط برای مدیر مدرسه قابل مشاهده است و برای ایمنی ثبت می‌شود.</div>':''}${t.includes('بانکی')?'<div class="banner wn" style="margin-top:8px">اطلاعات حساب فقط برای مدیر مدرسه قابل مشاهده است و برای امور مالی استفاده می‌شود.</div>':''}<div class="grid" style="margin-top:10px">${f.map(([k,l,ty,o])=>
+    ty==='a'?`<div style="grid-column:1/-1"><label>${l}</label><textarea id="${pre}${k}" rows="2"></textarea></div>`
+    :ty==='m'?`<div style="grid-column:1/-1"><label>${l}</label><div class="chips" id="${pre}${k}">${o.map(v=>`<label><input type="checkbox" value="${v}">${v}</label>`).join('')}</div></div>`
+    :ty==='o'?`<div style="grid-column:1/-1"><label>${l}</label><div id="${pre}${k}"></div><button type="button" class="btn sec sm" data-addos="${pre}${k}">+ افزودن مدرسه</button></div>`
+    :ty==='s'?`<div><label>${l}</label><select id="${pre}${k}"><option value="">انتخاب کنید</option>${o.map(v=>`<option>${v}</option>`).join('')}</select></div>`
+    :`<div><label>${l}</label><input id="${pre}${k}"${NUMT.includes(ty)||ty==='d'||ty==='acct'||ty==='card'||ty==='sheba'?' class="ltr" inputmode="numeric"':''}></div>`).join('')}</div></details>`).join('');
+  $(el).querySelectorAll('[data-addos]').forEach(b=>b.onclick=()=>osRow(document.getElementById(b.dataset.addos)));
 }
-buildExtra();
-function fillExtra(){const ex=me.student_extra||{};for(const [t,f] of SEC)for(const [k,l,ty] of f){
-  if(ty==='m')document.querySelectorAll('#x_'+k+' input').forEach(i=>i.checked=(ex[k]||[]).includes(i.value));
-  else $('#x_'+k).value=ex[k]??''}}
-function collectExtra(){const ex={};let err='';
-  for(const [t,f] of SEC)for(const [k,l,ty] of f){
-    let v;if(ty==='m')v=[...document.querySelectorAll('#x_'+k+' input:checked')].map(i=>i.value);
-    else{v=$('#x_'+k).value.trim();if(NUMT.includes(ty)||ty==='d')v=dig(v)}
+function fillSec(S,pre,ex){for(const [t,f] of S)for(const [k,l,ty] of f){
+  if(ty==='m')document.querySelectorAll('#'+pre+k+' input').forEach(i=>i.checked=(ex[k]||[]).includes(i.value));
+  else if(ty==='o'){const b=document.getElementById(pre+k);b.innerHTML='';(ex[k]||[]).forEach(x=>osRow(b,x.name,x.hours))}
+  else document.getElementById(pre+k).value=ex[k]??''}}
+function collectSec(S,pre){const ex={};let err='';
+  for(const [t,f] of S)for(const [k,l,ty] of f){
+    let v;
+    if(ty==='m')v=[...document.querySelectorAll('#'+pre+k+' input:checked')].map(i=>i.value);
+    else if(ty==='o'){v=[...document.querySelectorAll('#'+pre+k+' .osr')].map(r=>({name:r.children[0].value.trim(),hours:dig(r.children[1].value)})).filter(x=>x.name);
+      for(const x of v){if(x.hours!==''&&!(isFinite(+x.hours)&&+x.hours>=0&&+x.hours<=80)&&!err)err=l+': ساعت هر مدرسه باید عددی بین ۰ تا ۸۰ باشد.';x.hours=x.hours===''?null:+x.hours}}
+    else v=normV(ty,document.getElementById(pre+k).value);
     if(!v||(Array.isArray(v)&&!v.length))continue;
     if(vx[ty]){const m=vx[ty](v);if(m&&!err)err=l+': '+m}
     ex[k]=v}
   return {ex,err}}
-function extraHtml(s){const ex=s.student_extra||{};return SEC.map(([t,f])=>{const rows=f.filter(([k])=>ex[k]&&(!Array.isArray(ex[k])||ex[k].length)).map(([k,l])=>esc(l)+': '+esc(Array.isArray(ex[k])?ex[k].join('، '):ex[k]));return rows.length?`<hr><b>${t}</b><br>${rows.join('<br>')}`:''}).join('')}
+function extraHtmlS(S,ex){return S.map(([t,f])=>{const rows=f.filter(([k])=>{const v=ex[k];return v&&(!Array.isArray(v)||v.length)}).map(([k,l])=>esc(l)+': '+esc(fv(ex[k])));return rows.length?`<hr><b>${t}</b><br>${rows.join('<br>')}`:''}).join('')}
+const buildExtra=()=>buildSec(SEC,'#s_extra','x_'),fillExtra=()=>fillSec(SEC,'x_',me.student_extra||{}),collectExtra=()=>collectSec(SEC,'x_'),extraHtml=s=>extraHtmlS(SEC,s.student_extra||{});
+const buildT=()=>buildSec(TSEC,'#t_extra','tx_'),fillT=ex=>{fillSec(TSEC,'tx_',ex);$('#t_marital').value=ex.marital_status||'';$('#t_postal').value=ex.postal_code||''},collectT=()=>collectSec(TSEC,'tx_');
+const extraHtmlT=s=>{const ex=s.teacher_extra||{};const st=TSTATIC.filter(([k])=>ex[k]).map(([k,l])=>esc(l)+': '+esc(ex[k]));return (st.length?`<hr><b>اطلاعات تکمیلی</b><br>${st.join('<br>')}`:'')+extraHtmlS(TSEC,ex)};
+buildExtra();buildT();
 
 // ---- دانش‌آموزان ----
 const validJalali=v=>{const m=/^(\d{4})\/(\d{2})\/(\d{2})$/.exec(v);if(!m)return false;const y=+m[1],mo=+m[2],d=+m[3];return y>=1370&&y<=1420&&mo>=1&&mo<=12&&d>=1&&d<=(mo<=6?31:30)};
@@ -531,10 +566,17 @@ async function adminSetPw(id,v){const {error}=await sb.rpc('admin_set_password',
 function renderStudents(){
   const q=dig($('#sq').value);
   const L=students.filter(s=>!q||[s.full_name,s.national_id].some(v=>String(v||'').includes(q)));
-  $('#stb').innerHTML=L.map((s,i)=>{const ok=s.birth_date&&s.photo_path,ex=s.student_extra||{};return `<tr><td>${i+1}</td><td>${thumbHtml(s)}</td><td dir="ltr">${esc(s.national_id)}</td><td><a href="#" data-sd="${esc(s.id)}">${esc(s.first_name||s.full_name)}</a></td><td>${esc(s.last_name)}</td><td>${esc(((ex.father_first||'')+' '+(ex.father_last||'')).trim())}</td><td dir="ltr">${esc(s.birth_date)}</td><td dir="ltr">${esc(ex.cert_serial)}</td><td dir="ltr">${esc(s.mother_mobile)}</td><td dir="ltr">${esc(s.father_mobile)}</td><td><span class="tag ${ok?'ok':'wn'}">${ok?'کامل':'ناقص'}</span></td></tr>`+(sopen===s.id?`<tr><td colspan="11" class="det">تاریخ تولد: ${esc(s.birth_date)}<br>تلفن پدر: ${esc(s.father_mobile)} | تلفن مادر: ${esc(s.mother_mobile)} | تلفن ثابت: ${esc(s.home_phone)}<br>${extraHtml(s)}<img id="sph" class="hide" alt="" style="max-width:150px;border-radius:6px;margin-top:6px"><hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد ملی است ('+esc(s.national_id)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="snpw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-ssp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-srp="${esc(s.id)}">بازنشانی به کد ملی</button></div></td></tr>`:'')}).join('');
+  $('#stb').innerHTML=L.map((s,i)=>{const ok=s.birth_date&&s.photo_path,ex=s.student_extra||{};return `<tr><td>${i+1}</td><td>${thumbHtml(s)}</td><td dir="ltr">${esc(s.national_id)}</td><td><a href="#" data-sd="${esc(s.id)}">${esc(s.first_name||s.full_name)}</a></td><td>${esc(s.last_name)}</td><td>${esc(((ex.father_first||'')+' '+(ex.father_last||'')).trim())}</td><td dir="ltr">${esc(s.birth_date)}</td><td dir="ltr">${esc(ex.cert_serial)}</td><td dir="ltr">${esc(s.mother_mobile)}</td><td dir="ltr">${esc(s.father_mobile)}</td><td><span class="tag ${ok?'ok':'wn'}">${ok?'کامل':'ناقص'}</span></td></tr>`+(sopen===s.id?`<tr><td colspan="11" class="det">تاریخ تولد: ${esc(s.birth_date)}<br>تلفن پدر: ${esc(s.father_mobile)} | تلفن مادر: ${esc(s.mother_mobile)} | تلفن ثابت: ${esc(s.home_phone)}<br>${extraHtml(s)}<img id="sph" class="hide" alt="" style="max-width:150px;border-radius:6px;margin-top:6px"><hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد ملی است ('+esc(s.national_id)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="snpw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-ssp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-srp="${esc(s.id)}">بازنشانی به کد ملی</button></div><div style="margin-top:8px"><button class="btn sec sm" data-sdel="${esc(s.id)}" style="color:#c0392b">🗑 حذف دانش‌آموز از فهرست</button></div></td></tr>`:'')}).join('');
   $('#stb').querySelectorAll('[data-sd]').forEach(a=>a.onclick=e=>{e.preventDefault();sopen=sopen===a.dataset.sd?null:a.dataset.sd;renderStudents()});
   $('#stb').querySelectorAll('[data-ssp]').forEach(b=>b.onclick=()=>{const v=$('#snpw').value;if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}adminSetPw(b.dataset.ssp,v)});
   $('#stb').querySelectorAll('[data-srp]').forEach(b=>b.onclick=()=>{const t=students.find(x=>x.id===b.dataset.srp);if(t&&confirm('رمز به کد ملی بازنشانی شود؟'))adminSetPw(t.id,t.national_id)});
+  $('#stb').querySelectorAll('[data-sdel]').forEach(b=>b.onclick=async()=>{
+    const t=students.find(x=>x.id===b.dataset.sdel);if(!t)return;
+    if(!confirm('«'+t.full_name+'» از فهرست دانش‌آموزان حذف شود؟ حساب، اطلاعات و عکس او برای همیشه پاک می‌شود.'))return;
+    await wipeFolder('staff-docs',t.id);
+    const r=await sb.rpc('delete_student',{p_user:t.id});
+    if(r.error){alert('حذف انجام نشد: '+r.error.message);return}
+    sopen=null;await loadList();renderStudents()});
   loadThumbs(L);const o=students.find(x=>x.id===sopen);if(o&&o.photo_path)docUrl(o.photo_path).then(u=>{const i=document.getElementById('sph');if(i&&u){i.src=u;i.classList.remove('hide')}});
 }
 $('#sq').oninput=renderStudents;
@@ -581,22 +623,23 @@ async function saveXlsx(headers,rows,sheet,defName){
   try{await loadScript('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js')}catch(e){alert('بارگذاری ابزار ساخت اکسل انجام نشد. اینترنت یا فیلترشکن را بررسی کنید.');return}
   const wb=new ExcelJS.Workbook();
   const ws=wb.addWorksheet(sheet,{views:[{rightToLeft:true,state:'frozen',ySplit:1}]});
-  ws.addRow(headers);rows.forEach(r=>ws.addRow(r.map(v=>v==null?'':v)));
+  ws.addRow(headers);rows.forEach(r=>ws.addRow(r.map(v=>v==null?'':fa(String(v)))));
   const bd={style:'thin',color:{argb:'FF000000'}};
   ws.eachRow((row,n)=>row.eachCell({includeEmpty:true},c=>{
     c.border={top:bd,left:bd,bottom:bd,right:bd};
     c.alignment={horizontal:'center',vertical:'middle',wrapText:true};
-    if(n===1){c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFF00'}};c.font={bold:true,color:{argb:'FF000000'}}}}));
+    c.font={name:'Tahoma',size:11,bold:n===1,color:{argb:'FF000000'}};if(n===1){c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFF00'}}}}));
   headers.forEach((h,i)=>{let m=String(h).length;rows.forEach(r=>{m=Math.max(m,String(r[i]??'').length)});ws.getColumn(i+1).width=Math.min(40,m+4)});
   const buf=await wb.xlsx.writeBuffer();const blob=new Blob([buf],{type:MIME});
   if(handle){const w=await handle.createWritable();await w.write(blob);await w.close();return}
   const nm=prompt('نام فایل را وارد کنید:',defName);if(nm===null)return;
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=((nm.trim()||defName).replace(/[\\/:*?"<>|]/g,'_'))+'.xlsx';a.click();URL.revokeObjectURL(a.href);
 }
-const jn=v=>Array.isArray(v)?v.join('، '):v;
+const jn=fv;
 $('#ex').onclick=()=>{
-  const C=[['نام','first_name'],['نام خانوادگی','last_name'],['نام کاربری','username'],['کد ملی','national_id'],['کد پرسنلی','personnel_code'],['مدرک','degree'],['رشته تحصیلی','field_of_study'],['رشته تدریس','teaching_field'],['سمت','position'],['سابقه خدمت (سال)','service_years'],['ساعت همکاری در هفته','weekly_hours'],['پایه‌های تدریس','grades'],['روزهای همکاری','work_days'],['نام همسر','spouse_name'],['شغل همسر','spouse_job'],['تلفن همسر','spouse_phone'],['تعداد فرزند','children'],['آدرس','address'],['تلفن همراه','mobile'],['تلفن ثابت','home_phone'],['تلفن اضطراری','emergency_phone']];
-  saveXlsx([...C.map(c=>c[0]),'وضعیت'],list.map(s=>[...C.map(c=>jn(s[c[1]])),s.mstatus==='approved'?'تأییدشده':'در انتظار']),'دبیران','اطلاعات-دبیران');
+  const C=[['نام','first_name'],['نام خانوادگی','last_name'],['نام کاربری','username'],['کد ملی','national_id'],['کد پرسنلی','personnel_code'],['مدرک','degree'],['رشته تحصیلی','field_of_study'],['رشته تدریس','teaching_field'],['سمت','position'],['وضعیت همکاری','emp_status'],['سابقه خدمت (سال)','service_years'],['ساعت تدریس در هفته','weekly_hours'],['ساعت موظف','mandatory_hours'],['ساعت غیرموظف','extra_hours'],['پایه‌های تدریس','grades'],['روزهای همکاری','work_days'],['نام همسر','spouse_name'],['شغل همسر','spouse_job'],['تلفن همسر','spouse_phone'],['تعداد فرزند','children'],['آدرس','address'],['تلفن همراه','mobile'],['تلفن ثابت','home_phone'],['تلفن اضطراری','emergency_phone']];
+  const X=[...TSTATIC,...TSEC.flatMap(x=>x[1]).map(f=>[f[0],f[1]])];
+  saveXlsx([...C.map(c=>c[0]),...X.map(x=>x[1]),'وضعیت'],list.map(s=>[...C.map(c=>fv(s[c[1]])),...X.map(([k])=>fv((s.teacher_extra||{})[k])),s.mstatus==='approved'?'تأییدشده':'در انتظار']),'دبیران','اطلاعات-دبیران');
 };
 $('#sex').onclick=()=>{
   const C=[['نام','first_name'],['نام خانوادگی','last_name'],['کد ملی','national_id'],['تاریخ تولد','birth_date'],['تلفن همراه پدر','father_mobile'],['تلفن همراه مادر','mother_mobile'],['تلفن ثابت','home_phone']];
@@ -659,7 +702,8 @@ document.querySelectorAll('input[type=password]').forEach(inp=>{
 // ---- همکاری در مدارس (دبیر) ----
 let coopFilled=false;
 const coopDetails=sch=>(mems.find(x=>x.school===sch)||{}).details||{};
-function fillCoopFrom(d){$('#teaching_field').value=d.teaching_field||'';$('#position').value=d.position||'';$('#weekly_hours').value=d.weekly_hours??'';
+function fillCoopFrom(d){$('#teaching_field').value=d.teaching_field||'';$('#position').value=d.position||'';$('#emp_status').value=d.emp_status||'';
+  $('#weekly_hours').value=d.weekly_hours??'';$('#mandatory_hours').value=d.mandatory_hours??'';$('#extra_hours').value=d.extra_hours??'';
   document.querySelectorAll('#grades input').forEach(i=>i.checked=(d.grades||[]).includes(i.value));
   document.querySelectorAll('#days input').forEach(i=>i.checked=(d.work_days||[]).includes(i.value))}
 function renderCoop(){
@@ -683,11 +727,17 @@ function renderCoop(){
 $('#coop_save').onclick=async()=>{
   const e=$('#coop_err');e.style.color='#c0392b';e.textContent='';
   const tf=$('#teaching_field').value.trim();if(!tf){e.textContent='رشته تدریس را وارد کنید.';return}
-  const wh=dig($('#weekly_hours').value);
-  const det={teaching_field:tf,position:$('#position').value.trim(),weekly_hours:wh===''?null:+wh,grades:checked('#grades'),work_days:checked('#days')};
+  const num=id=>{const v=dig($('#'+id).value);return v===''?null:+v};
+  const wh=num('weekly_hours'),md=num('mandatory_hours'),xh=num('extra_hours');
+  if([wh,md,xh].some(v=>v!==null&&!(isFinite(v)&&v>=0&&v<=80))){e.textContent='ساعت‌ها باید عددی بین ۰ تا ۸۰ باشند.';return}
+  if(md!==null||xh!==null){
+    if(wh===null){e.textContent='ابتدا ساعت تدریس در هفته را وارد کنید.';return}
+    if(Math.abs((md||0)+(xh||0)-wh)>0.001){e.textContent='مجموع ساعت موظف و غیرموظف ('+((md||0)+(xh||0))+') باید با ساعت تدریس ('+wh+') برابر باشد.';return}
+  }
+  const det={teaching_field:tf,position:$('#position').value.trim(),emp_status:$('#emp_status').value,weekly_hours:wh,mandatory_hours:md,extra_hours:xh,grades:checked('#grades'),work_days:checked('#days')};
   const {error}=await sb.from('memberships').update({details:det}).eq('user_id',me.id).eq('school',coopSel);
   if(error){e.textContent='ذخیره نشد: '+error.message;return}
-  const m=mems.find(x=>x.school===coopSel);if(m)m.details=det;
+  const mm=mems.find(x=>x.school===coopSel);if(mm)mm.details=det;
   e.style.color='var(--ok)';e.textContent='اطلاعات همکاری در این مدرسه ثبت شد.';setTimeout(()=>e.textContent='',3000);
 };
 $('#coop_copy').onclick=()=>{
@@ -714,8 +764,10 @@ async function renderCreator(){
   $('#cr_admins').querySelectorAll('[data-cs2]').forEach(b=>b.onclick=()=>{const v=document.getElementById('cpw_'+b.dataset.cs2).value;if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}go(b.dataset.cs2,v)});
 }
 
+async function wipeFolder(bucket,uid){try{const {data}=await sb.storage.from(bucket).list(uid,{limit:1000});if(data&&data.length)await sb.storage.from(bucket).remove(data.map(f=>uid+'/'+f.name))}catch(e){}}
+const fa=t=>String(t).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
 // ---- مدارک ----
-const CATS={birth_certificate:'شناسنامه (همه صفحات)',national_card:'کارت ملی',appreciation:'تقدیرنامه',inservice:'لیست دوره‌های ضمن خدمت',plan_daily:'طرح درس روزانه',plan_annual:'طرح درس سالانه',other:'سایر مدارک'};
+const CATS={birth_certificate:'شناسنامه (همه صفحات)',national_card:'کارت ملی',appreciation:'تقدیرنامه',decree:'حکم / ابلاغ',inservice:'لیست دوره‌های ضمن خدمت',plan_daily:'طرح درس روزانه',plan_annual:'طرح درس سالانه',other:'سایر مدارک'};
 $('#dcat').innerHTML=Object.entries(CATS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
 let mydocs=[];
 const docUrl=async p=>{const {data}=await sb.storage.from('staff-docs').createSignedUrl(p,600);return data?.signedUrl};
@@ -751,10 +803,12 @@ async function loadAdminDocs(id){
 // ---- چاپ فرم مشخصات (از پنجره چاپ مرورگر گزینه «Save as PDF» را انتخاب کنید) ----
 async function printForm(p,sch){
   if(!p)return;
-  const rows=[['نام',p.first_name],['نام خانوادگی',p.last_name],['کد ملی',p.national_id],['کد پرسنلی',p.personnel_code],['تلفن همراه',p.mobile],['تلفن ثابت',p.home_phone],['تلفن اضطراری',p.emergency_phone],['مدرک تحصیلی',p.degree],['رشته تحصیلی',p.field_of_study],['رشته تدریس',p.teaching_field],['سمت',p.position],['سابقه خدمت (سال)',p.service_years],['ساعت همکاری در هفته',p.weekly_hours],['پایه‌های تدریس',(p.grades||[]).join('، ')],['روزهای همکاری',(p.work_days||[]).join('، ')],['نام همسر',p.spouse_name],['شغل همسر',p.spouse_job],['تلفن همسر',p.spouse_phone],['تعداد فرزند',p.children],['آدرس',p.address]];
+  const ex=p.teacher_extra||{};
+  const rows=[['نام',p.first_name],['نام خانوادگی',p.last_name],['کد ملی',p.national_id],['کد پرسنلی',p.personnel_code],['تلفن همراه',p.mobile],['تلفن ثابت',p.home_phone],['تلفن اضطراری',p.emergency_phone],['مدرک تحصیلی',p.degree],['رشته تحصیلی',p.field_of_study],['رشته تدریس',p.teaching_field],['سمت',p.position],['وضعیت همکاری',p.emp_status],['سابقه خدمت (سال)',p.service_years],['ساعت تدریس در هفته',p.weekly_hours],['ساعت موظف',p.mandatory_hours],['ساعت غیرموظف',p.extra_hours],['پایه‌های تدریس',fv(p.grades)],['روزهای همکاری',fv(p.work_days)],['نام همسر',p.spouse_name],['شغل همسر',p.spouse_job],['تلفن همسر',p.spouse_phone],['تعداد فرزند',p.children],['آدرس',p.address],
+    ...TSTATIC.map(([k,l])=>[l,ex[k]]),...TSEC.flatMap(x=>x[1]).map(([k,l])=>[l,fv(ex[k])]).filter(r=>r[1])];
   const w=window.open('','_blank');if(!w){alert('اجازه باز شدن پنجره جدید را به سایت بدهید.');return}
   const pu=p.photo_path?await docUrl(p.photo_path):'';
-  w.document.write(`<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فرم مشخصات - ${esc(p.full_name)}</title><link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet"><style>@page{size:A4;margin:14mm}body{font-family:Vazirmatn,Tahoma,sans-serif;color:#000;line-height:1.7}h1{text-align:center;font-size:20px;margin:0 0 4px}.d{text-align:center;font-size:12px;margin-bottom:14px}table{width:100%;border-collapse:collapse}td{border:1px solid #444;padding:7px 10px;font-size:13px;vertical-align:top}td:first-child{width:30%;background:#eee;font-weight:600}.sig{display:flex;justify-content:space-between;margin-top:48px;font-size:13px}</style></head><body>${pu?`<img src="${pu}" style="position:absolute;left:0;top:0;width:30mm;height:40mm;object-fit:cover;border:1px solid #444">`:''}<h1>فرم مشخصات همکار${sch?' – مدرسه '+esc(schName(sch)):''}</h1><div class="d">تاریخ چاپ: ${new Date().toLocaleDateString('fa-IR')}</div><table>${rows.map(([k,v])=>`<tr><td>${k}</td><td>${esc(v)}</td></tr>`).join('')}</table><div class="sig"><span>امضای همکار</span><span>امضای مدیر</span></div></body></html>`);
+  w.document.write(`<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فرم مشخصات - ${esc(p.full_name)}</title><link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet"><style>@page{size:A4;margin:0}body{margin:0;padding:12mm 14mm;font-family:Vazirmatn,Tahoma,sans-serif;color:#000;line-height:1.7}.hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.sp{width:30mm;height:40mm;flex:none}.tt{flex:1;text-align:center}h1{font-size:20px;margin:0}h2{font-size:15px;margin:2px 0}.d{font-size:12px}img{width:30mm;height:40mm;object-fit:cover;border:1px solid #444}table{width:100%;border-collapse:collapse}td{border:1px solid #444;padding:6px 10px;font-size:13px;vertical-align:top}td:first-child{width:30%;background:#eee;font-weight:600}.sig{display:flex;justify-content:space-between;margin-top:40px;font-size:13px}</style></head><body><div class="hd"><div class="sp"></div><div class="tt"><h1>فرم مشخصات همکار</h1>${sch?`<h2>مدرسه ${esc(fa(schName(sch)))}</h2>`:''}<div class="d">تاریخ چاپ: ${new Date().toLocaleDateString('fa-IR')}</div></div><div class="sp">${pu?`<img src="${pu}" alt="">`:''}</div></div><table>${rows.map(([k,v])=>`<tr><td>${k}</td><td>${esc(fa(String(v??'')))}</td></tr>`).join('')}</table><div class="sig"><span>امضای همکار</span><span>امضای مدیر</span></div></body></html>`);
   w.document.close();setTimeout(()=>{w.focus();w.print()},1800);
 }
 $('#prt').onclick=()=>{if(!me||!me.full_name||!me.national_id){alert('ابتدا اطلاعات فرم را ثبت کنید.');return}const sc=isAdm()?me.admin_school:(coopSel||(mems[0]||{}).school);printForm({...me,...(isAdm()?{}:coopDetails(sc))},sc)};
@@ -783,7 +837,7 @@ function renderAdmin(){
   let L=list.filter(s=>!q||[s.full_name,s.national_id,s.personnel_code,s.teaching_field].some(v=>String(v||'').includes(q)));
   if(onlyPending)L=L.filter(s=>s.mstatus!=='approved');
   $('#empty').classList.toggle('hide',list.length>0);$('#fl').textContent=onlyPending?'نمایش همه':'فقط در انتظار تأیید';
-  $('#tb').innerHTML=L.map((s,i)=>`<tr><td>${i+1}</td><td>${thumbHtml(s)}</td><td><a href="#" data-d="${esc(s.id)}">${esc(s.first_name||s.full_name||s.email)}</a></td><td>${esc(s.last_name)}</td><td dir="ltr">${esc(s.personnel_code)}</td><td dir="ltr">${esc(s.national_id)}</td><td dir="ltr">${esc(s.mobile)}</td><td>${esc(s.weekly_hours)}</td><td><span class="tag ${s.mstatus==='approved'?'ok':'wn'}">${s.mstatus==='approved'?'تأییدشده':'در انتظار'}</span></td><td><button class="btn sm ${s.mstatus==='approved'?'sec':''}" data-a="${esc(s.id)}">${s.mstatus==='approved'?'لغو تأیید':'تأیید'}</button></td></tr>`+(open===s.id?`<tr><td colspan="10" class="det"><img id="tph" class="hide" alt="" style="max-width:110px;border-radius:6px"><br>ایمیل: ${esc(s.email)} | کد ملی: ${esc(s.national_id)} | مدرک: ${esc(s.degree)} ${esc(s.field_of_study)}<br>سمت: ${esc(s.position)} | سابقه: ${esc(s.service_years)} سال | پایه‌ها: ${esc((s.grades||[]).join('، '))} | روزها: ${esc((s.work_days||[]).join('، '))}<br>همسر: ${esc(s.spouse_name)} ${esc(s.spouse_job)} ${esc(s.spouse_phone)} | فرزند: ${esc(s.children)}<br>همراه: ${esc(s.mobile)} | ثابت: ${esc(s.home_phone)} | اضطراری: ${esc(s.emergency_phone)}<br>آدرس: ${esc(s.address)}<hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد پرسنلی است ('+esc(s.personnel_code)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="npw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-sp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-rp="${esc(s.id)}">بازنشانی به کد پرسنلی</button></div><hr><b>مدارک:</b> <span id="dl-${esc(s.id)}">…</span><div style="margin-top:8px"><button class="btn sec sm" data-p="${esc(s.id)}">🖨 چاپ فرم مشخصات</button></div></td></tr>`:'')).join('');
+  $('#tb').innerHTML=L.map((s,i)=>`<tr><td>${i+1}</td><td>${thumbHtml(s)}</td><td><a href="#" data-d="${esc(s.id)}">${esc(s.first_name||s.full_name||s.email)}</a></td><td>${esc(s.last_name)}</td><td dir="ltr">${esc(s.personnel_code)}</td><td dir="ltr">${esc(s.national_id)}</td><td dir="ltr">${esc(s.mobile)}</td><td>${esc(s.weekly_hours)}</td><td><span class="tag ${s.mstatus==='approved'?'ok':'wn'}">${s.mstatus==='approved'?'تأییدشده':'در انتظار'}</span></td><td><button class="btn sm ${s.mstatus==='approved'?'sec':''}" data-a="${esc(s.id)}">${s.mstatus==='approved'?'لغو تأیید':'تأیید'}</button></td></tr>`+(open===s.id?`<tr><td colspan="10" class="det"><img id="tph" class="hide" alt="" style="max-width:110px;border-radius:6px"><br>ایمیل: ${esc(s.email)} | کد ملی: ${esc(s.national_id)} | مدرک: ${esc(s.degree)} ${esc(s.field_of_study)}<br>سمت: ${esc(s.position)} | وضعیت همکاری: ${esc(s.emp_status)} | ساعت تدریس: ${esc(s.weekly_hours)} | موظف: ${esc(s.mandatory_hours)} | غیرموظف: ${esc(s.extra_hours)} | سابقه: ${esc(s.service_years)} سال | پایه‌ها: ${esc((s.grades||[]).join('، '))} | روزها: ${esc((s.work_days||[]).join('، '))}<br>همسر: ${esc(s.spouse_name)} ${esc(s.spouse_job)} ${esc(s.spouse_phone)} | فرزند: ${esc(s.children)}<br>همراه: ${esc(s.mobile)} | ثابت: ${esc(s.home_phone)} | اضطراری: ${esc(s.emergency_phone)}<br>آدرس: ${esc(s.address)}${extraHtmlT(s)}<hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد پرسنلی است ('+esc(s.personnel_code)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="npw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-sp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-rp="${esc(s.id)}">بازنشانی به کد پرسنلی</button></div><hr><b>مدارک:</b> <span id="dl-${esc(s.id)}">…</span><div style="margin-top:8px"><button class="btn sec sm" data-p="${esc(s.id)}">🖨 چاپ فرم مشخصات</button> <button class="btn sec sm" data-del="${esc(s.id)}" style="color:#c0392b">🗑 حذف از فهرست</button></div></td></tr>`:'')).join('');
   $('#tb').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{const s=list.find(x=>x.id===b.dataset.a);
     const {error}=await sb.rpc('set_membership',{p_user:s.id,p_school:me.admin_school,p_status:s.mstatus==='approved'?'pending':'approved'});if(error)alert(error.message);else{await loadList();renderAdmin()}});
   $('#tb').querySelectorAll('[data-d]').forEach(a=>a.onclick=e=>{e.preventDefault();open=open===a.dataset.d?null:a.dataset.d;renderAdmin()});
@@ -793,11 +847,26 @@ function renderAdmin(){
   $('#tb').querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{const v=$('#npw').value;if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}setPw(b.dataset.sp,v)});
   $('#tb').querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>{const t=list.find(x=>x.id===b.dataset.rp);if(!t||!t.personnel_code){alert('کد پرسنلی ثبت نشده است.');return}if(confirm('رمز به کد پرسنلی بازنشانی شود؟'))setPw(t.id,t.personnel_code)});
   $('#tb').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>printForm(list.find(x=>x.id===b.dataset.p),me.admin_school));
+  $('#tb').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+    const t=list.find(x=>x.id===b.dataset.del);if(!t)return;
+    if(!confirm('«'+t.full_name+'» از فهرست دبیران مدرسه '+schName(me.admin_school)+' حذف شود؟\nاگر در مدرسه دیگری عضو نباشد، حساب و فایل‌هایش برای همیشه پاک می‌شود.'))return;
+    const o=await sb.rpc('other_school_exists',{p_user:t.id,p_school:me.admin_school});
+    if(o.error){alert('انجام نشد: '+o.error.message);return}
+    if(!o.data){await wipeFolder('staff-docs',t.id);await wipeFolder('chat-files',t.id)}
+    const r=await sb.rpc('remove_teacher',{p_user:t.id,p_school:me.admin_school});
+    if(r.error){alert('حذف انجام نشد: '+r.error.message);return}
+    open=null;await loadList();renderAdmin();renderStudents()});
   loadThumbs(L);
   if(open){loadAdminDocs(open);const t=list.find(x=>x.id===open);if(t&&t.photo_path)docUrl(t.photo_path).then(u=>{const i=document.getElementById('tph');if(i&&u){i.src=u;i.classList.remove('hide')}})}
 }
 $('#q').oninput=renderAdmin;$('#fl').onclick=()=>{onlyPending=!onlyPending;renderAdmin()};
 $('#rf').onclick=async()=>{await loadList();renderAdmin()};
+// ---- ارقام فارسی در تمام صفحه ----
+const faTxt=n=>{if(n.nodeType===3){const t=n.nodeValue,u=fa(t);if(u!==t)n.nodeValue=u}else if(n.nodeType===1&&!['SCRIPT','STYLE','TEXTAREA','INPUT','SELECT'].includes(n.tagName))n.childNodes.forEach(faTxt)};
+new MutationObserver(ms=>ms.forEach(m=>{m.addedNodes.forEach(faTxt);if(m.type==='characterData')faTxt(m.target)})).observe(document.body,{childList:true,subtree:true,characterData:true});
+faTxt(document.body);
+document.addEventListener('input',e=>{const t=e.target;
+  if((t.tagName==='INPUT'&&['text','tel','search',''].includes(t.type))||t.tagName==='TEXTAREA'){const v=t.value,u=fa(v);if(u!==v){const c=t.selectionStart;t.value=u;try{t.setSelectionRange(c,c)}catch(x){}}}},true);
 </script>
 </body>
 </html>
