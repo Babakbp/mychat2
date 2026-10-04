@@ -10,14 +10,14 @@
 :root{--bg:#f4f6fa;--card:#fff;--tx:#1d2433;--mu:#667085;--br:#d9deea;--pr:#2457c5;--prt:#fff;--ok:#117a45;--wn:#a15c07;--me:#e3ecff;--ot:#eef0f5}
 @media (prefers-color-scheme:dark){:root{--bg:#121620;--card:#1b2130;--tx:#e8ecf5;--mu:#98a2b8;--br:#2b3347;--pr:#6b9bff;--prt:#0b1020;--ok:#4cc38a;--wn:#f0b45a;--me:#25355c;--ot:#262e42}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font-family:Vazirmatn,Tahoma,sans-serif;line-height:1.7}
+body{margin:0;min-height:100vh;background:#0b1d3a linear-gradient(160deg,#091731 0%,#12356b 55%,#0a2147 100%) fixed;color:var(--tx);font-family:Vazirmatn,Tahoma,sans-serif;line-height:1.7}
 header{padding:14px 16px;background:var(--card);border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;gap:8px}
 h1{font-size:18px;margin:0}
 nav{display:flex;gap:6px;padding:10px 16px;overflow-x:auto}
 nav button{background:var(--card);border:1px solid var(--br);color:var(--tx);padding:8px 16px;border-radius:20px;font:inherit;cursor:pointer;white-space:nowrap}
 nav button.on{background:var(--pr);color:var(--prt);border-color:var(--pr)}
 main{max-width:860px;margin:0 auto;padding:0 16px 32px}
-.card{background:var(--card);border:1px solid var(--br);border-radius:12px;padding:16px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--br);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 8px 28px rgba(0,0,0,.28)}
 .banner{padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:14px;border:1px solid var(--br);background:var(--card)}
 .ok{color:var(--ok)}.wn{color:var(--wn)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
@@ -35,7 +35,8 @@ h3{margin:18px 0 8px;font-size:15px}
 .m{max-width:80%;padding:8px 12px;border-radius:12px;background:var(--ot);align-self:flex-start;word-break:break-word}
 .m.me{background:var(--me);align-self:flex-end}
 .m b{font-size:12px;color:var(--mu);display:block}
-.m .x{cursor:pointer;color:var(--mu);margin-inline-start:8px}
+.m .x{cursor:pointer;color:var(--mu);margin-inline-start:8px;background:none;border:0;font:inherit;padding:2px 8px}
+.m .x:hover{color:#c0392b}
 #cf,.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 #cf{margin-top:10px;flex-wrap:nowrap}
 table{width:100%;border-collapse:collapse;font-size:14px}
@@ -96,6 +97,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <div><label>رشته تدریس *</label><input id="teaching_field"></div>
 <div><label>سمت</label><input id="position"></div>
 <div><label>سابقه خدمت (سال)</label><input id="service_years" type="number" min="0" max="60"></div>
+<div><label>ساعت همکاری در هفته</label><input id="weekly_hours" type="number" min="0" max="80" step="0.5"></div>
 </div>
 <label style="margin-top:10px">پایه‌های تدریس</label><div class="chips" id="grades"></div>
 <label style="margin-top:10px">روزهای همکاری</label><div class="chips" id="days"></div>
@@ -163,7 +165,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <button class="btn" id="ex">خروجی اکسل (XLSX)</button>
 <button class="btn sec" id="exp">خروجی عکس‌ها</button>
 </div>
-<div class="tw"><table><thead><tr><th>نام</th><th>کد پرسنلی</th><th>رشته تدریس</th><th>وضعیت</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
+<div class="tw"><table><thead><tr><th>نام</th><th>نام خانوادگی</th><th>کد پرسنلی</th><th>کد ملی</th><th>تلفن همراه</th><th>ساعت همکاری در هفته</th><th>وضعیت</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
 <div id="empty" class="banner hide">هنوز ثبت‌نامی انجام نشده است.</div>
 </section>
 
@@ -202,8 +204,8 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const dig=s=>String(s||'').replace(/[۰-۹]/g,d=>d.charCodeAt(0)-1776).replace(/[٠-٩]/g,d=>d.charCodeAt(0)-1632).trim();
 const DAYS=['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه'];
 const GR=['اول','دوم','سوم','چهارم','پنجم','ششم','هفتم','هشتم','نهم','دهم','یازدهم','دوازدهم'];
-const TXT=['first_name','last_name','national_id','personnel_code','mobile','home_phone','emergency_phone','degree','field_of_study','teaching_field','position','service_years','spouse_name','spouse_job','spouse_phone','children','address'];
-const NUM=['service_years','children'];
+const TXT=['first_name','last_name','national_id','personnel_code','mobile','home_phone','emergency_phone','degree','field_of_study','teaching_field','position','service_years','weekly_hours','spouse_name','spouse_job','spouse_phone','children','address'];
+const NUM=['service_years','children','weekly_hours'];
 let me=null,tab='form',list=[],msgs=[],open=null,onlyPending=false,chan=null,filled=false,sfilled=false,students=[],sopen=null;
 const chips=(id,arr)=>$(id).innerHTML=arr.map(d=>`<label><input type="checkbox" value="${d}">${d}</label>`).join('');
 chips('#days',DAYS);chips('#grades',GR);
@@ -321,8 +323,12 @@ function renderChat(){
       a.onclick=async e=>{e.preventDefault();const u=await fileUrl(m.file_path,true);if(u)window.open(u,'_blank')};d.append(a);
       if((m.file_type||'').startsWith('image/'))fileUrl(m.file_path).then(u=>{if(!u)return;const i=document.createElement('img');i.src=u;i.onload=()=>{if(near)box.scrollTop=box.scrollHeight};a.after(i)})}
     else{const t=document.createElement('span');t.textContent=m.body;d.append(t)}
-    if(isAdm()||m.user_id===me.id){const x=document.createElement('span');x.className='x';x.textContent='✕';
-      x.onclick=async()=>{if(m.file_path)await sb.storage.from('chat-files').remove([m.file_path]);sb.from('messages').delete().eq('id',m.id)};d.append(x)}
+    if(isAdm()||m.user_id===me.id){const x=document.createElement('button');x.className='x';x.type='button';x.title='حذف پیام';x.textContent='✕';
+      x.onclick=async()=>{if(!confirm('این پیام حذف شود؟'))return;
+        const r=await sb.from('messages').delete().eq('id',m.id).select('id');
+        if(r.error||!r.data||!r.data.length){alert('حذف انجام نشد. فایل schema_v8.sql را در SQL Editor اجرا کنید.'+(r.error?' ('+r.error.message+')':''));return}
+        if(m.file_path)await sb.storage.from('chat-files').remove([m.file_path]);
+        msgs=msgs.filter(z=>z.id!==m.id);renderChat()};d.append(x)}
     box.append(d)});
   if(near)box.scrollTop=box.scrollHeight;
 }
@@ -513,7 +519,7 @@ async function saveXlsx(headers,rows,sheet,defName){
 }
 const jn=v=>Array.isArray(v)?v.join('، '):v;
 $('#ex').onclick=()=>{
-  const C=[['نام','first_name'],['نام خانوادگی','last_name'],['نام کاربری','username'],['کد ملی','national_id'],['کد پرسنلی','personnel_code'],['مدرک','degree'],['رشته تحصیلی','field_of_study'],['رشته تدریس','teaching_field'],['سمت','position'],['سابقه خدمت (سال)','service_years'],['پایه‌های تدریس','grades'],['روزهای همکاری','work_days'],['نام همسر','spouse_name'],['شغل همسر','spouse_job'],['تلفن همسر','spouse_phone'],['تعداد فرزند','children'],['آدرس','address'],['تلفن همراه','mobile'],['تلفن ثابت','home_phone'],['تلفن اضطراری','emergency_phone']];
+  const C=[['نام','first_name'],['نام خانوادگی','last_name'],['نام کاربری','username'],['کد ملی','national_id'],['کد پرسنلی','personnel_code'],['مدرک','degree'],['رشته تحصیلی','field_of_study'],['رشته تدریس','teaching_field'],['سمت','position'],['سابقه خدمت (سال)','service_years'],['ساعت همکاری در هفته','weekly_hours'],['پایه‌های تدریس','grades'],['روزهای همکاری','work_days'],['نام همسر','spouse_name'],['شغل همسر','spouse_job'],['تلفن همسر','spouse_phone'],['تعداد فرزند','children'],['آدرس','address'],['تلفن همراه','mobile'],['تلفن ثابت','home_phone'],['تلفن اضطراری','emergency_phone']];
   saveXlsx([...C.map(c=>c[0]),'وضعیت'],list.map(s=>[...C.map(c=>jn(s[c[1]])),s.approved?'تأییدشده':'در انتظار']),'دبیران','اطلاعات-دبیران');
 };
 $('#sex').onclick=()=>{
@@ -594,7 +600,7 @@ async function loadAdminDocs(id){
 // ---- چاپ فرم مشخصات (از پنجره چاپ مرورگر گزینه «Save as PDF» را انتخاب کنید) ----
 async function printForm(p){
   if(!p)return;
-  const rows=[['نام',p.first_name],['نام خانوادگی',p.last_name],['کد ملی',p.national_id],['کد پرسنلی',p.personnel_code],['تلفن همراه',p.mobile],['تلفن ثابت',p.home_phone],['تلفن اضطراری',p.emergency_phone],['مدرک تحصیلی',p.degree],['رشته تحصیلی',p.field_of_study],['رشته تدریس',p.teaching_field],['سمت',p.position],['سابقه خدمت (سال)',p.service_years],['پایه‌های تدریس',(p.grades||[]).join('، ')],['روزهای همکاری',(p.work_days||[]).join('، ')],['نام همسر',p.spouse_name],['شغل همسر',p.spouse_job],['تلفن همسر',p.spouse_phone],['تعداد فرزند',p.children],['آدرس',p.address]];
+  const rows=[['نام',p.first_name],['نام خانوادگی',p.last_name],['کد ملی',p.national_id],['کد پرسنلی',p.personnel_code],['تلفن همراه',p.mobile],['تلفن ثابت',p.home_phone],['تلفن اضطراری',p.emergency_phone],['مدرک تحصیلی',p.degree],['رشته تحصیلی',p.field_of_study],['رشته تدریس',p.teaching_field],['سمت',p.position],['سابقه خدمت (سال)',p.service_years],['ساعت همکاری در هفته',p.weekly_hours],['پایه‌های تدریس',(p.grades||[]).join('، ')],['روزهای همکاری',(p.work_days||[]).join('، ')],['نام همسر',p.spouse_name],['شغل همسر',p.spouse_job],['تلفن همسر',p.spouse_phone],['تعداد فرزند',p.children],['آدرس',p.address]];
   const w=window.open('','_blank');if(!w){alert('اجازه باز شدن پنجره جدید را به سایت بدهید.');return}
   const pu=p.photo_path?await docUrl(p.photo_path):'';
   w.document.write(`<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فرم مشخصات - ${esc(p.full_name)}</title><link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet"><style>@page{size:A4;margin:14mm}body{font-family:Vazirmatn,Tahoma,sans-serif;color:#000;line-height:1.7}h1{text-align:center;font-size:20px;margin:0 0 4px}.d{text-align:center;font-size:12px;margin-bottom:14px}table{width:100%;border-collapse:collapse}td{border:1px solid #444;padding:7px 10px;font-size:13px;vertical-align:top}td:first-child{width:30%;background:#eee;font-weight:600}.sig{display:flex;justify-content:space-between;margin-top:48px;font-size:13px}</style></head><body>${pu?`<img src="${pu}" style="position:absolute;left:0;top:0;width:30mm;height:40mm;object-fit:cover;border:1px solid #444">`:''}<h1>فرم مشخصات همکار</h1><div class="d">تاریخ چاپ: ${new Date().toLocaleDateString('fa-IR')}</div><table>${rows.map(([k,v])=>`<tr><td>${k}</td><td>${esc(v)}</td></tr>`).join('')}</table><div class="sig"><span>امضای همکار</span><span>امضای مدیر</span></div></body></html>`);
@@ -618,7 +624,7 @@ function renderAdmin(){
   let L=list.filter(s=>!q||[s.full_name,s.national_id,s.personnel_code,s.teaching_field].some(v=>String(v||'').includes(q)));
   if(onlyPending)L=L.filter(s=>!s.approved);
   $('#empty').classList.toggle('hide',list.length>0);$('#fl').textContent=onlyPending?'نمایش همه':'فقط در انتظار تأیید';
-  $('#tb').innerHTML=L.map(s=>`<tr><td><a href="#" data-d="${esc(s.id)}">${esc(s.full_name||s.email)}</a></td><td dir="ltr">${esc(s.personnel_code)}</td><td>${esc(s.teaching_field)}</td><td><span class="tag ${s.approved?'ok':'wn'}">${s.approved?'تأییدشده':'در انتظار'}</span></td><td><button class="btn sm ${s.approved?'sec':''}" data-a="${esc(s.id)}">${s.approved?'لغو تأیید':'تأیید'}</button></td></tr>`+(open===s.id?`<tr><td colspan="5" class="det"><img id="tph" class="hide" alt="" style="max-width:110px;border-radius:6px"><br>ایمیل: ${esc(s.email)} | کد ملی: ${esc(s.national_id)} | مدرک: ${esc(s.degree)} ${esc(s.field_of_study)}<br>سمت: ${esc(s.position)} | سابقه: ${esc(s.service_years)} سال | پایه‌ها: ${esc((s.grades||[]).join('، '))} | روزها: ${esc((s.work_days||[]).join('، '))}<br>همسر: ${esc(s.spouse_name)} ${esc(s.spouse_job)} ${esc(s.spouse_phone)} | فرزند: ${esc(s.children)}<br>همراه: ${esc(s.mobile)} | ثابت: ${esc(s.home_phone)} | اضطراری: ${esc(s.emergency_phone)}<br>آدرس: ${esc(s.address)}<hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد پرسنلی است ('+esc(s.personnel_code)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="npw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-sp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-rp="${esc(s.id)}">بازنشانی به کد پرسنلی</button></div><hr><b>مدارک:</b> <span id="dl-${esc(s.id)}">…</span><div style="margin-top:8px"><button class="btn sec sm" data-p="${esc(s.id)}">🖨 چاپ فرم مشخصات</button></div></td></tr>`:'')).join('');
+  $('#tb').innerHTML=L.map(s=>`<tr><td><a href="#" data-d="${esc(s.id)}">${esc(s.first_name||s.full_name||s.email)}</a></td><td>${esc(s.last_name)}</td><td dir="ltr">${esc(s.personnel_code)}</td><td dir="ltr">${esc(s.national_id)}</td><td dir="ltr">${esc(s.mobile)}</td><td>${esc(s.weekly_hours)}</td><td><span class="tag ${s.approved?'ok':'wn'}">${s.approved?'تأییدشده':'در انتظار'}</span></td><td><button class="btn sm ${s.approved?'sec':''}" data-a="${esc(s.id)}">${s.approved?'لغو تأیید':'تأیید'}</button></td></tr>`+(open===s.id?`<tr><td colspan="8" class="det"><img id="tph" class="hide" alt="" style="max-width:110px;border-radius:6px"><br>ایمیل: ${esc(s.email)} | کد ملی: ${esc(s.national_id)} | مدرک: ${esc(s.degree)} ${esc(s.field_of_study)}<br>سمت: ${esc(s.position)} | سابقه: ${esc(s.service_years)} سال | پایه‌ها: ${esc((s.grades||[]).join('، '))} | روزها: ${esc((s.work_days||[]).join('، '))}<br>همسر: ${esc(s.spouse_name)} ${esc(s.spouse_job)} ${esc(s.spouse_phone)} | فرزند: ${esc(s.children)}<br>همراه: ${esc(s.mobile)} | ثابت: ${esc(s.home_phone)} | اضطراری: ${esc(s.emergency_phone)}<br>آدرس: ${esc(s.address)}<hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد پرسنلی است ('+esc(s.personnel_code)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="npw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-sp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-rp="${esc(s.id)}">بازنشانی به کد پرسنلی</button></div><hr><b>مدارک:</b> <span id="dl-${esc(s.id)}">…</span><div style="margin-top:8px"><button class="btn sec sm" data-p="${esc(s.id)}">🖨 چاپ فرم مشخصات</button></div></td></tr>`:'')).join('');
   $('#tb').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{const s=list.find(x=>x.id===b.dataset.a);
     const {error}=await sb.rpc('set_approved',{uid:s.id,val:!s.approved});if(error)alert(error.message);else{await loadList();renderAdmin()}});
   $('#tb').querySelectorAll('[data-d]').forEach(a=>a.onclick=e=>{e.preventDefault();open=open===a.dataset.d?null:a.dataset.d;renderAdmin()});
