@@ -214,7 +214,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 </section>
 
 <section id="v-students" class="card hide">
-<div class="banner">تأیید درخواست‌های ثبت‌نام (همکار و دانش‌آموز) در تب «پنل مدیر» انجام می‌شود.</div>
+<div class="banner">تأیید درخواست‌های ثبت‌نام (همکار و دانش‌آموز) در تب «پنل دبیران» انجام می‌شود.</div>
 <div class="row" style="margin-bottom:10px"><input id="sq" placeholder="جستجو: نام یا کد ملی" style="flex:1;min-width:180px"><button class="btn sec" id="srf">بازخوانی</button><button class="btn" id="sex">خروجی اکسل (XLSX)</button><button class="btn sec" id="sexp">خروجی عکس‌ها</button></div>
 <div class="tw"><table><thead><tr><th>ردیف</th><th>عکس</th><th>کد ملی</th><th>نام</th><th>نام خانوادگی</th><th>نام پدر</th><th>تاریخ تولد</th><th>سریال شناسنامه</th><th>تلفن مادر</th><th>تلفن پدر</th><th>پرونده</th></tr></thead><tbody id="stb"></tbody></table></div>
 </section>
@@ -343,8 +343,8 @@ async function onSession(s){
 const isAdm=()=>me?.role==='admin',isCre=()=>me?.role==='creator',canChat=()=>!!chatSchool&&(isAdm()||(me?.role==='teacher'&&mems.some(x=>x.status==='approved')));
 function render(){
   if(!me)return;
-  const tabs=[['chat','گفتگو'],['form','مشخصات من'],['coop','همکاری در مدارس'],['docs','مدارک من']];if(isAdm())tabs.push(['admin','پنل مدیر'],['students','دانش‌آموزان']);tabs.push(['acct','حساب']);
-  if(isAdm()){tabs.length=0;tabs.push(['admin','پنل مدیر'],['students','دانش‌آموزان'],['chat','گفتگو'],['form','مشخصات من'],['docs','مدارک من'],['acct','حساب'])}
+  const tabs=[['chat','گفتگو'],['form','مشخصات من'],['coop','همکاری در مدارس'],['docs','مدارک من']];if(isAdm())tabs.push(['admin','پنل دبیران'],['students','پنل دانش‌آموزان']);tabs.push(['acct','حساب']);
+  if(isAdm()){tabs.length=0;tabs.push(['admin','پنل دبیران'],['students','پنل دانش‌آموزان'],['chat','گفتگو'],['form','مشخصات من'],['docs','مدارک من'],['acct','حساب'])}
   if(me.role==='student'){tabs.length=0;tabs.push(['stu','پرونده من'],['acct','حساب'])}
   if(isCre()){tabs.length=0;tabs.push(['creator','پنل سازنده'],['acct','حساب'])}
   if(me.must_change){tabs.length=0;tabs.push(['acct','حساب']);tab='acct'}
