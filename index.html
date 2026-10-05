@@ -298,7 +298,7 @@ $('#li').onclick=async()=>{
   try{const {data:em,error:re}=cre?await sb.rpc('creator_email'):await sb.rpc('login_email',{u,scope:ctx.scope});
     if(re){aerr('خطای دیتابیس: '+re.message+' — اگر پیام درباره «function» یا «schema cache» است، فایل schema_v9.sql را اجرا کنید و سپس دستور notify pgrst را بزنید.');return}
     if(!em){aerr(cre?'حساب سازنده در دیتابیس پیدا نشد.':'نام کاربری در این بخش پیدا نشد، یا ثبت‌نام شما هنوز تأیید نشده است.');return}
-    const {error}=await sb.auth.signInWithPassword({email:em,password:p});
+    let error=null;for(const pp of [...new Set([dig(p),p,fa(dig(p))])]){({error}=await sb.auth.signInWithPassword({email:em,password:pp}));if(!error)break}
     aerr(error?(/Invalid login/i.test(error.message)?'نام کاربری پیدا شد اما رمز نادرست است.':'خطا: '+error.message):'')}
   catch(e){aerr('اتصال به Supabase برقرار نشد. اینترنت یا فیلترشکن را بررسی کنید.')}};
 $('#pw').onkeydown=e=>{if(e.key==='Enter')$('#li').click()};
@@ -312,9 +312,9 @@ $('#rb').onclick=async()=>{
   if(data!=='ok'){e.textContent='اطلاعات نامعتبر است.';return}
   e.style.color='var(--ok)';e.textContent='درخواست شما برای '+ctx.regs.map(schName).join(' و ')+' ثبت شد و برای مدیر ارسال می‌شود. پس از تأیید، با '+(st?'کد ملی':'کد پرسنلی')+' (به‌عنوان نام کاربری و رمز اولیه) وارد شوید.'};
 $('#out').onclick=async()=>{try{await sb.auth.signOut({scope:'local'})}catch(e){}try{Object.keys(localStorage).filter(k=>k.startsWith('sb-')).forEach(k=>localStorage.removeItem(k))}catch(e){}tab='form';await onSession(null)};
-$('#pb').onclick=async()=>{const a=$('#np1').value,e=$('#perr');e.style.color='#c0392b';
+$('#pb').onclick=async()=>{const a=dig($('#np1').value),e=$('#perr');e.style.color='#c0392b';
   if(a.length<8){e.textContent='رمز باید حداقل ۸ نویسه باشد.';return}
-  if(a!==$('#np2').value){e.textContent='تکرار رمز مطابقت ندارد.';return}
+  if(a!==dig($('#np2').value)){e.textContent='تکرار رمز مطابقت ندارد.';return}
   if(me&&a===me.personnel_code){e.textContent='رمز جدید نباید همان کد پرسنلی باشد.';return}
   const {error}=await sb.auth.updateUser({password:a});
   if(error){e.textContent='تغییر رمز انجام نشد: '+error.message;return}
@@ -569,7 +569,7 @@ function renderStudents(){
   const L=students.filter(s=>!q||[s.full_name,s.national_id].some(v=>String(v||'').includes(q)));
   $('#stb').innerHTML=L.map((s,i)=>{const ok=s.birth_date&&s.photo_path,ex=s.student_extra||{};return `<tr><td>${i+1}</td><td>${thumbHtml(s)}</td><td dir="ltr">${esc(s.national_id)}</td><td><a href="#" data-sd="${esc(s.id)}">${esc(s.first_name||s.full_name)}</a></td><td>${esc(s.last_name)}</td><td>${esc(((ex.father_first||'')+' '+(ex.father_last||'')).trim())}</td><td dir="ltr">${esc(s.birth_date)}</td><td dir="ltr">${esc(ex.cert_serial)}</td><td dir="ltr">${esc(s.mother_mobile)}</td><td dir="ltr">${esc(s.father_mobile)}</td><td><span class="tag ${ok?'ok':'wn'}">${ok?'کامل':'ناقص'}</span></td></tr>`+(sopen===s.id?`<tr><td colspan="11" class="det">تاریخ تولد: ${esc(s.birth_date)}<br>تلفن پدر: ${esc(s.father_mobile)} | تلفن مادر: ${esc(s.mother_mobile)} | تلفن ثابت: ${esc(s.home_phone)}<br>${extraHtml(s)}<img id="sph" class="hide" alt="" style="max-width:150px;border-radius:6px;margin-top:6px"><hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد ملی است ('+esc(s.national_id)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="snpw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-ssp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-srp="${esc(s.id)}">بازنشانی به کد ملی</button></div><div style="margin-top:8px"><button class="btn sec sm" data-sdel="${esc(s.id)}" style="color:#c0392b">🗑 حذف دانش‌آموز از فهرست</button></div></td></tr>`:'')}).join('');
   $('#stb').querySelectorAll('[data-sd]').forEach(a=>a.onclick=e=>{e.preventDefault();sopen=sopen===a.dataset.sd?null:a.dataset.sd;renderStudents()});
-  $('#stb').querySelectorAll('[data-ssp]').forEach(b=>b.onclick=()=>{const v=$('#snpw').value;if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}adminSetPw(b.dataset.ssp,v)});
+  $('#stb').querySelectorAll('[data-ssp]').forEach(b=>b.onclick=()=>{const v=dig($('#snpw').value);if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}adminSetPw(b.dataset.ssp,v)});
   $('#stb').querySelectorAll('[data-srp]').forEach(b=>b.onclick=()=>{const t=students.find(x=>x.id===b.dataset.srp);if(t&&confirm('رمز به کد ملی بازنشانی شود؟'))adminSetPw(t.id,t.national_id)});
   $('#stb').querySelectorAll('[data-sdel]').forEach(b=>b.onclick=async()=>{
     const t=students.find(x=>x.id===b.dataset.sdel);if(!t)return;
@@ -762,7 +762,7 @@ async function renderCreator(){
   const go=async(k,pw)=>{const {error}=await sb.rpc('creator_reset_admin',{p_school:k,p_password:pw});
     alert(error?'انجام نشد: '+error.message:(pw?'رمز مدیر تعیین شد.':'رمز مدیر به رمز اولیه بازنشانی شد.'))};
   $('#cr_admins').querySelectorAll('[data-cr]').forEach(b=>b.onclick=()=>{if(confirm('رمز این مدیر به رمز اولیه بازنشانی شود؟'))go(b.dataset.cr,null)});
-  $('#cr_admins').querySelectorAll('[data-cs2]').forEach(b=>b.onclick=()=>{const v=document.getElementById('cpw_'+b.dataset.cs2).value;if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}go(b.dataset.cs2,v)});
+  $('#cr_admins').querySelectorAll('[data-cs2]').forEach(b=>b.onclick=()=>{const v=dig(document.getElementById('cpw_'+b.dataset.cs2).value);if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}go(b.dataset.cs2,v)});
 }
 
 async function wipeFolder(bucket,uid){try{const {data}=await sb.storage.from(bucket).list(uid,{limit:1000});if(data&&data.length)await sb.storage.from(bucket).remove(data.map(f=>uid+'/'+f.name))}catch(e){}}
@@ -845,7 +845,7 @@ function renderAdmin(){
   const setPw=async(id,v)=>{const {error}=await sb.rpc('admin_set_password',{target:id,new_password:v});
     if(error){alert('تنظیم رمز انجام نشد: '+error.message);return}
     alert('رمز تنظیم شد. کاربر در اولین ورود باید آن را تغییر دهد.');await loadList();renderAdmin()};
-  $('#tb').querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{const v=$('#npw').value;if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}setPw(b.dataset.sp,v)});
+  $('#tb').querySelectorAll('[data-sp]').forEach(b=>b.onclick=()=>{const v=dig($('#npw').value);if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}setPw(b.dataset.sp,v)});
   $('#tb').querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>{const t=list.find(x=>x.id===b.dataset.rp);if(!t||!t.personnel_code){alert('کد پرسنلی ثبت نشده است.');return}if(confirm('رمز به کد پرسنلی بازنشانی شود؟'))setPw(t.id,t.personnel_code)});
   $('#tb').querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>printForm(list.find(x=>x.id===b.dataset.p),me.admin_school));
   $('#tb').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
@@ -867,6 +867,8 @@ const faTxt=n=>{if(n.nodeType===3){const t=n.nodeValue,u=fa(t);if(u!==t)n.nodeVa
 new MutationObserver(ms=>ms.forEach(m=>{m.addedNodes.forEach(faTxt);if(m.type==='characterData')faTxt(m.target)})).observe(document.body,{childList:true,subtree:true,characterData:true});
 faTxt(document.body);
 document.addEventListener('input',e=>{const t=e.target;
+  if(t.closest&&t.closest('.pwwrap'))return;
+  if(['npw','snpw'].includes(t.id)||(t.id||'').startsWith('cpw_'))return;
   if((t.tagName==='INPUT'&&['text','tel','search',''].includes(t.type))||t.tagName==='TEXTAREA'){const v=t.value,u=fa(v);if(u!==v){const c=t.selectionStart;t.value=u;try{t.setSelectionRange(c,c)}catch(x){}}}},true);
 </script>
 </body>
