@@ -199,6 +199,10 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 </section>
 
 <section id="v-admin" class="card hide">
+<div class="banner"><b>ورود اطلاعات دبیران از اکسل</b>
+<div style="font-size:13px;color:var(--mu);margin-top:4px">فایل اکسل (.xlsx) با ستون‌های: کد پرسنلی (۸ رقمی) / نام / نام خانوادگی / تلفن همراه. دبیران واردشده با کد (به‌عنوان نام کاربری و رمز اولیه) مستقیم وارد می‌شوند و بقیه ثبت‌نام اولیه می‌کنند.</div>
+<div class="row" style="margin-top:8px"><button class="btn sm" id="imp_t_pick">انتخاب فایل اکسل</button><button class="btn sec sm" id="imp_t_tpl">دانلود قالب نمونه</button><button class="btn sec sm" id="imp_t_help">📘 راهنما</button><input type="file" id="imp_t_file" accept=".xlsx" class="hide"></div>
+<div id="imp_t_cnt" style="margin-top:6px;font-size:13px"></div><div id="imp_t_res" style="margin-top:6px;font-size:13px"></div></div>
 <h3 style="margin-top:0">درخواست‌های ثبت‌نام</h3><div id="regs" class="tw" style="margin-bottom:8px"></div>
 <h3>همکاران</h3>
 <div class="row" style="margin-bottom:10px">
@@ -214,6 +218,10 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 </section>
 
 <section id="v-students" class="card hide">
+<div class="banner"><b>ورود اطلاعات دانش‌آموزان از اکسل</b>
+<div style="font-size:13px;color:var(--mu);margin-top:4px">فایل اکسل (.xlsx) با ستون‌های: کد ملی (۱۰ رقمی) / نام / نام خانوادگی / تلفن همراه. دانش‌آموزان واردشده با کد (به‌عنوان نام کاربری و رمز اولیه) مستقیم وارد می‌شوند و بقیه ثبت‌نام اولیه می‌کنند.</div>
+<div class="row" style="margin-top:8px"><button class="btn sm" id="imp_s_pick">انتخاب فایل اکسل</button><button class="btn sec sm" id="imp_s_tpl">دانلود قالب نمونه</button><button class="btn sec sm" id="imp_s_help">📘 راهنما</button><input type="file" id="imp_s_file" accept=".xlsx" class="hide"></div>
+<div id="imp_s_cnt" style="margin-top:6px;font-size:13px"></div><div id="imp_s_res" style="margin-top:6px;font-size:13px"></div></div>
 <div class="banner">تأیید درخواست‌های ثبت‌نام (همکار و دانش‌آموز) در تب «پنل دبیران» انجام می‌شود.</div>
 <div class="row" style="margin-bottom:10px"><input id="sq" placeholder="جستجو: نام یا کد ملی" style="flex:1;min-width:180px"><button class="btn sec" id="srf">بازخوانی</button><button class="btn" id="sex">خروجی اکسل (XLSX)</button><button class="btn sec" id="sexp">خروجی عکس‌ها</button></div>
 <div class="tw"><table><thead><tr><th>ردیف</th><th>عکس</th><th>کد ملی</th><th>نام</th><th>نام خانوادگی</th><th>نام پدر</th><th>تاریخ تولد</th><th>سریال شناسنامه</th><th>تلفن مادر</th><th>تلفن پدر</th><th>پرونده</th></tr></thead><tbody id="stb"></tbody></table></div>
@@ -250,7 +258,7 @@ const DAYS=['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهار
 const GR=['هفتم','هشتم','نهم'];
 const TXT=['first_name','last_name','national_id','personnel_code','mobile','home_phone','emergency_phone','degree','field_of_study','service_years','spouse_name','spouse_job','spouse_phone','children','address'];
 const NUM=['service_years','children','weekly_hours'];
-let me=null,tab='form',list=[],msgs=[],open=null,onlyPending=false,chan=null,filled=false,sfilled=false,lastUid=null,students=[],sopen=null,mems=[],chatSchool=null,coopSel=null;
+let me=null,tab='form',list=[],msgs=[],open=null,onlyPending=false,chan=null,filled=false,sfilled=false,lastUid=null,students=[],sopen=null,impCnt={teacher:0,student:0},mems=[],chatSchool=null,coopSel=null;
 const chips=(id,arr)=>$(id).innerHTML=arr.map(d=>`<label><input type="checkbox" value="${d}">${d}</label>`).join('');
 chips('#days',DAYS);chips('#grades',GR);
 const checked=id=>[...document.querySelectorAll(id+' input:checked')].map(i=>i.value);
@@ -297,7 +305,14 @@ $('#li').onclick=async()=>{
   if((!cre&&!u)||!p)return;aerr('در حال ورود…',true);
   try{const {data:em,error:re}=cre?await sb.rpc('creator_email'):await sb.rpc('login_email',{u,scope:ctx.scope});
     if(re){aerr('خطای دیتابیس: '+re.message+' — اگر پیام درباره «function» یا «schema cache» است، فایل schema_v9.sql را اجرا کنید و سپس دستور notify pgrst را بزنید.');return}
-    if(!em){aerr(cre?'حساب سازنده در دیتابیس پیدا نشد.':'نام کاربری در این بخش پیدا نشد، یا ثبت‌نام شما هنوز تأیید نشده است.');return}
+    if(!em){
+      const st=ctx.scope==='student';
+      if(!cre&&(st||ctx.scope==='teacher')&&/^\d+$/.test(u)&&u===dig(p)&&(st?validId(u):/^\d{8}$/.test(u))){
+        const mail=authEmail(u,st?'student':'teacher');
+        const r=await sb.auth.signUp({email:mail,password:u});
+        if(!r.error){if(!r.data.session)await sb.auth.signInWithPassword({email:mail,password:u});aerr('حساب شما ساخته شد؛ در حال ورود…',true);return}
+        aerr('این کد در فهرست مدرسه نیست یا هنوز تأیید نشده است. ابتدا «ثبت‌نام اولیه» را انجام دهید.');return}
+      aerr(cre?'حساب سازنده در دیتابیس پیدا نشد.':'نام کاربری در این بخش پیدا نشد، یا ثبت‌نام شما هنوز تأیید نشده است. (برای بار اول، نام کاربری و رمز هر دو همان کد هستند.)');return}
     let error=null;for(const pp of [...new Set([dig(p),p,fa(dig(p))])]){({error}=await sb.auth.signInWithPassword({email:em,password:pp}));if(!error)break}
     aerr(error?(/Invalid login/i.test(error.message)?'نام کاربری پیدا شد اما رمز نادرست است.':'خطا: '+error.message):'')}
   catch(e){aerr('اتصال به Supabase برقرار نشد. اینترنت یا فیلترشکن را بررسی کنید.')}};
@@ -308,6 +323,7 @@ $('#rb').onclick=async()=>{
   if(!fn||!ln||!m){e.textContent='نام، نام خانوادگی و تلفن همراه را وارد کنید.';return}
   const {data,error}=await sb.rpc('register_person',{p_kind:k,p_code:c,p_first:fn,p_last:ln,p_mobile:m,p_schools:ctx.regs});
   if(error){e.textContent='ثبت نشد: '+error.message;return}
+  if(data==='imported'){e.textContent='اطلاعات شما قبلاً توسط مدرسه ثبت شده است. از بخش ورود، کد را هم به‌عنوان نام کاربری و هم رمز وارد کنید.';return}
   if(data==='exists'){e.textContent='برای این کد قبلاً درخواست ثبت شده است.';return}
   if(data!=='ok'){e.textContent='اطلاعات نامعتبر است.';return}
   e.style.color='var(--ok)';e.textContent='درخواست شما برای '+ctx.regs.map(schName).join(' و ')+' ثبت شد و برای مدیر ارسال می‌شود. پس از تأیید، با '+(st?'کد ملی':'کد پرسنلی')+' (به‌عنوان نام کاربری و رمز اولیه) وارد شوید.'};
@@ -565,6 +581,7 @@ async function adminSetPw(id,v){const {error}=await sb.rpc('admin_set_password',
   if(error){alert('تنظیم رمز انجام نشد: '+error.message);return}
   alert('رمز تنظیم شد. کاربر در اولین ورود باید آن را تغییر دهد.');await loadList();renderAdmin();renderStudents()}
 function renderStudents(){
+  $('#imp_s_cnt').textContent='واردشده از اکسل و هنوز وارد سامانه نشده: '+impCnt.student+' نفر';
   const q=dig($('#sq').value);
   const L=students.filter(s=>!q||[s.full_name,s.national_id].some(v=>String(v||'').includes(q)));
   $('#stb').innerHTML=L.map((s,i)=>{const ok=s.birth_date&&s.photo_path,ex=s.student_extra||{};return `<tr><td>${i+1}</td><td>${thumbHtml(s)}</td><td dir="ltr">${esc(s.national_id)}</td><td><a href="#" data-sd="${esc(s.id)}">${esc(s.first_name||s.full_name)}</a></td><td>${esc(s.last_name)}</td><td>${esc(((ex.father_first||'')+' '+(ex.father_last||'')).trim())}</td><td dir="ltr">${esc(s.birth_date)}</td><td dir="ltr">${esc(ex.cert_serial)}</td><td dir="ltr">${esc(s.mother_mobile)}</td><td dir="ltr">${esc(s.father_mobile)}</td><td><span class="tag ${ok?'ok':'wn'}">${ok?'کامل':'ناقص'}</span></td></tr>`+(sopen===s.id?`<tr><td colspan="11" class="det">تاریخ تولد: ${esc(s.birth_date)}<br>تلفن پدر: ${esc(s.father_mobile)} | تلفن مادر: ${esc(s.mother_mobile)} | تلفن ثابت: ${esc(s.home_phone)}<br>${extraHtml(s)}<img id="sph" class="hide" alt="" style="max-width:150px;border-radius:6px;margin-top:6px"><hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد ملی است ('+esc(s.national_id)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="snpw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-ssp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-srp="${esc(s.id)}">بازنشانی به کد ملی</button></div><div style="margin-top:8px"><button class="btn sec sm" data-sdel="${esc(s.id)}" style="color:#c0392b">🗑 حذف دانش‌آموز از فهرست</button></div></td></tr>`:'')}).join('');
@@ -614,7 +631,7 @@ $('#cc').onclick=()=>cleanChat(true);
 
 // ---- خروجی اکسل (xlsx) ----
 function loadScript(src){return new Promise((ok,no)=>{if(window.ExcelJS)return ok();const t=document.createElement('script');t.src=src;t.onload=ok;t.onerror=()=>no(new Error('load'));document.head.append(t)})}
-async function saveXlsx(headers,rows,sheet,defName){
+async function saveXlsx(headers,rows,sheet,defName,textCols){
   const MIME='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
   let handle=null;
   if(window.showSaveFilePicker){
@@ -624,6 +641,7 @@ async function saveXlsx(headers,rows,sheet,defName){
   try{await loadScript('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js')}catch(e){alert('بارگذاری ابزار ساخت اکسل انجام نشد. اینترنت یا فیلترشکن را بررسی کنید.');return}
   const wb=new ExcelJS.Workbook();
   const ws=wb.addWorksheet(sheet,{views:[{rightToLeft:true,state:'frozen',ySplit:1}]});
+  (textCols||[]).forEach(i=>{ws.getColumn(i).numFmt='@'});
   ws.addRow(headers);rows.forEach(r=>ws.addRow(r.map(v=>v==null?'':fa(String(v)))));
   const bd={style:'thin',color:{argb:'FF000000'}};
   ws.eachRow((row,n)=>row.eachCell({includeEmpty:true},c=>{
@@ -758,15 +776,112 @@ async function renderCreator(){
   $('#cr_stats').innerHTML=out.join('');
   const ad=await sb.from('profiles').select('id,admin_school,username,full_name').eq('role','admin');
   $('#cr_admins').innerHTML=['raz','mehr'].map(k=>{const a=(ad.data||[]).find(x=>x.admin_school===k);
-    return `<div class="banner"><b>مدیر مدرسه ${esc(schName(k))}</b><br>`+(a?`نام کاربری فعلی: <span dir="ltr">${esc(a.username)}</span>${a.full_name?' | '+esc(a.full_name):''}<div class="row" style="margin-top:8px"><button class="btn sm" data-cr="${k}">بازنشانی رمز به رمز اولیه</button><input id="cpw_${k}" class="ltr" placeholder="یا رمز دلخواه (حداقل ۸ نویسه)" style="max-width:240px"><button class="btn sec sm" data-cs2="${k}">تعیین رمز دلخواه</button></div>`:'حساب این مدیر هنوز ساخته نشده است.')+'</div>'}).join('');
+    return `<div class="banner"><b>مدیر مدرسه ${esc(schName(k))}</b><br>`+(a?`نام کاربری فعلی: <span dir="ltr">${esc(a.username)}</span>${a.full_name?' | '+esc(a.full_name):''}<div class="row" style="margin-top:8px"><input id="cun_${k}" class="ltr" placeholder="نام کاربری جدید" style="max-width:200px"><button class="btn sm" data-cu="${k}">تغییر نام کاربری</button></div><div class="row" style="margin-top:8px"><button class="btn sm" data-cr="${k}">بازنشانی رمز به رمز اولیه</button><input id="cpw_${k}" class="ltr" placeholder="یا رمز دلخواه (حداقل ۸ نویسه)" style="max-width:240px"><button class="btn sec sm" data-cs2="${k}">تعیین رمز دلخواه</button></div>`:'حساب این مدیر هنوز ساخته نشده است.')+'</div>'}).join('');
   const go=async(k,pw)=>{const {error}=await sb.rpc('creator_reset_admin',{p_school:k,p_password:pw});
     alert(error?'انجام نشد: '+error.message:(pw?'رمز مدیر تعیین شد.':'رمز مدیر به رمز اولیه بازنشانی شد.'))};
   $('#cr_admins').querySelectorAll('[data-cr]').forEach(b=>b.onclick=()=>{if(confirm('رمز این مدیر به رمز اولیه بازنشانی شود؟'))go(b.dataset.cr,null)});
   $('#cr_admins').querySelectorAll('[data-cs2]').forEach(b=>b.onclick=()=>{const v=dig(document.getElementById('cpw_'+b.dataset.cs2).value);if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}go(b.dataset.cs2,v)});
+  $('#cr_admins').querySelectorAll('[data-cu]').forEach(b=>b.onclick=async()=>{const v=dig(document.getElementById('cun_'+b.dataset.cu).value);
+    if(!/^[A-Za-z0-9_.@-]{3,40}$/.test(v)){alert('نام کاربری باید ۳ تا ۴۰ نویسه و فقط شامل حروف انگلیسی، عدد و _ . - @ باشد.');return}
+    const {error}=await sb.rpc('creator_set_admin_username',{p_school:b.dataset.cu,p_username:v});
+    if(error){alert('انجام نشد: '+error.message);return}alert('نام کاربری تغییر کرد.');renderCreator()});
 }
 
 async function wipeFolder(bucket,uid){try{const {data}=await sb.storage.from(bucket).list(uid,{limit:1000});if(data&&data.length)await sb.storage.from(bucket).remove(data.map(f=>uid+'/'+f.name))}catch(e){}}
 const fa=t=>String(t).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[d]);
+// ---- ورود اطلاعات از اکسل ----
+const EXJS='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+async function parseSheet(file,kind){
+  await loadScript(EXJS);
+  const wb=new ExcelJS.Workbook();await wb.xlsx.load(await file.arrayBuffer());
+  const ws=wb.worksheets[0];if(!ws)throw new Error('برگه‌ای در فایل نیست.');
+  const norm=v=>dig(String(v==null?'':v)).replace(/[\u200c\s]/g,'').replace(/ي/g,'ی').replace(/ك/g,'ک');
+  const txt=c=>{const v=c.value;if(v==null)return '';if(typeof v==='object'){if(v.richText)return v.richText.map(t=>t.text).join('');if(v.result!=null)return String(v.result);if(v.text)return String(v.text);return ''}return String(v)};
+  const st=kind==='student',K={code:st?['کدملی']:['کدپرسنلی'],first:['نام'],last:['نامخانوادگی'],mobile:['تلفنهمراه','موبایل','شمارهتلفنهمراه','تلفنهمراهولی']};
+  const idx={};ws.getRow(1).eachCell({includeEmpty:false},(c,n)=>{const h=norm(txt(c));for(const k in K)if(K[k].includes(h)&&!idx[k])idx[k]=n});
+  const miss=Object.keys(K).filter(k=>!idx[k]);
+  if(miss.length)throw new Error('ستون‌های ردیف اول باید دقیقاً این‌ها باشد: '+(st?'کد ملی':'کد پرسنلی')+' / نام / نام خانوادگی / تلفن همراه');
+  const rows=[],errors=[],seen=new Set();
+  for(let i=2;i<=ws.rowCount;i++){
+    const r=ws.getRow(i),g=k=>txt(r.getCell(idx[k])).trim();
+    if(!g('code')&&!g('first')&&!g('last')&&!g('mobile'))continue;
+    let code=norm(g('code'));
+    if(!/^\d+$/.test(code)){errors.push({row:i,reason:'کد باید فقط عدد باشد'});continue}
+    if(st){if(code.length===8)code='00'+code;else if(code.length===9)code='0'+code;
+      if(code.length!==10||!validId(code)){errors.push({row:i,reason:'کد ملی مطابق قانون ثبت احوال نیست'});continue}}
+    else if(code.length!==8){errors.push({row:i,reason:'کد پرسنلی باید دقیقاً ۸ رقم باشد'});continue}
+    let mob=norm(g('mobile')).replace(/[-+()]/g,'');
+    if(/^98(9\d{9})$/.test(mob))mob='0'+mob.slice(2);else if(/^9\d{9}$/.test(mob))mob='0'+mob;
+    if(!/^09\d{9}$/.test(mob)){errors.push({row:i,reason:'تلفن همراه نامعتبر'});continue}
+    const fx=v=>v.replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\s+/g,' ').trim(),first=fx(g('first')),last=fx(g('last'));
+    if(!first||!last){errors.push({row:i,reason:'نام یا نام خانوادگی خالی است'});continue}
+    if(seen.has(code)){errors.push({row:i,reason:'کد تکراری در همین فایل'});continue}
+    seen.add(code);rows.push({row:i,code,first,last,mobile:mob});
+  }
+  return {rows,errors};
+}
+async function runImport(kind,input,res){
+  const f=input.files[0];input.value='';if(!f)return;
+  res.style.color='';res.textContent='در حال خواندن فایل…';
+  let pr;try{pr=await parseSheet(f,kind)}catch(e){res.style.color='#c0392b';res.textContent='خواندن فایل انجام نشد: '+e.message;return}
+  if(!pr.rows.length){res.style.color='#c0392b';res.textContent='ردیف معتبری پیدا نشد.'+(pr.errors.length?' '+pr.errors.slice(0,10).map(x=>'ردیف '+x.row+': '+x.reason).join(' | '):'');return}
+  if(!confirm(pr.rows.length+' ردیف معتبر و '+pr.errors.length+' ردیف دارای خطا پیدا شد. ردیف‌های معتبر وارد شوند؟')){res.textContent='';return}
+  const tot={inserted:0,updated:0,skipped:0};const errs=[...pr.errors];
+  for(let i=0;i<pr.rows.length;i+=150){
+    res.textContent='در حال ثبت… '+Math.min(i+150,pr.rows.length)+' از '+pr.rows.length;
+    const {data,error}=await sb.rpc('import_people',{p_kind:kind,p_school:me.admin_school,p_rows:pr.rows.slice(i,i+150)});
+    if(error){res.style.color='#c0392b';res.textContent='ثبت انجام نشد: '+error.message+' (آیا schema_v11.sql اجرا شده است؟)';return}
+    tot.inserted+=data.inserted;tot.updated+=data.updated;tot.skipped+=data.skipped;errs.push(...(data.errors||[]));
+  }
+  res.style.color=errs.length?'var(--wn)':'var(--ok)';
+  res.textContent=tot.inserted+' نفر جدید، '+tot.updated+' نفر به‌روزرسانی، '+tot.skipped+' نفر از قبل ثبت‌شده. '+(errs.length?errs.length+' ردیف وارد نشد: '+errs.slice(0,15).map(x=>'ردیف '+x.row+': '+x.reason).join(' | ')+(errs.length>15?' …':''):'');
+  await loadList();renderAdmin();renderStudents();
+}
+$('#imp_t_pick').onclick=()=>$('#imp_t_file').click();
+$('#imp_s_pick').onclick=()=>$('#imp_s_file').click();
+$('#imp_t_file').onchange=()=>runImport('teacher',$('#imp_t_file'),$('#imp_t_res'));
+$('#imp_s_file').onchange=()=>runImport('student',$('#imp_s_file'),$('#imp_s_res'));
+$('#imp_t_tpl').onclick=()=>saveXlsx(['کد پرسنلی','نام','نام خانوادگی','تلفن همراه'],[],'دبیران','قالب-دبیران',[1,4]);
+$('#imp_s_tpl').onclick=()=>saveXlsx(['کد ملی','نام','نام خانوادگی','تلفن همراه'],[],'دانش‌آموزان','قالب-دانش-آموزان',[1,4]);
+
+// ---- راهنمای ورود از اکسل ----
+function showImportHelp(kind){
+  const st=kind==='student',who=st?'دانش‌آموزان':'دبیران',code=st?'کد ملی':'کد پرسنلی';
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:60;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto';
+  m.innerHTML=`<div class="card" style="max-width:640px;width:100%;margin:0;max-height:92vh;overflow:auto;line-height:2">
+<h3 style="margin-top:0">راهنمای ورود اطلاعات ${who} از اکسل</h3>
+<b>۱) آماده‌کردن فایل</b>
+<ul style="margin:4px 0 8px"><li>روی «دانلود قالب نمونه» بزنید و فایل را باز کنید، یا خودتان یک فایل اکسل با پسوند <span dir="ltr">.xlsx</span> بسازید.</li>
+<li>در <b>ردیف اول</b> دقیقاً این چهار عنوان را بنویسید: <b>${code}</b> / <b>نام</b> / <b>نام خانوادگی</b> / <b>تلفن همراه</b> (ترتیب ستون‌ها مهم نیست).</li>
+<li>از ردیف دوم، هر ردیف یک نفر است. ردیف‌های خالی نادیده گرفته می‌شوند.</li></ul>
+<b>۲) قوانین ${code}</b>
+<ul style="margin:4px 0 8px">${st?`<li>کد ملی باید ۱۰ رقم و مطابق قانون ثبت احوال ایران (رقم کنترلی) باشد.</li>
+<li>اگر اکسل صفرهای ابتدایی را حذف کرده باشد، خودکار اصلاح می‌شود: کد <b>۸ رقمی</b> با دو صفر و کد <b>۹ رقمی</b> با یک صفر در ابتدا ۱۰ رقمی می‌شود. سپس اعتبار آن بررسی می‌شود و در صورت نامعتبر بودن وارد نمی‌شود.</li>
+<li>بهتر است ستون کد ملی را در اکسل از نوع «Text» بگذارید (در فایل نمونه از قبل تنظیم شده است).</li>`:`<li>کد پرسنلی باید <b>دقیقاً ۸ رقم</b> باشد. کد کوتاه‌تر یا بلندتر وارد نمی‌شود.</li>
+<li>ستون کد پرسنلی را در اکسل از نوع «Text» بگذارید تا صفرهای ابتدایی حذف نشود (در فایل نمونه از قبل تنظیم شده است).</li>`}<li>کد تکراری در یک فایل فقط یک‌بار وارد می‌شود.</li></ul>
+<b>۳) تلفن همراه و نام</b>
+<ul style="margin:4px 0 8px"><li>شماره باید ۱۱ رقمی و با <span dir="ltr">09</span> شروع شود. شماره بدون صفر اول (مثل <span dir="ltr">9123456789</span>) یا با <span dir="ltr">+98</span> خودکار اصلاح می‌شود.</li>
+<li>نام و نام خانوادگی نباید خالی باشند. ارقام فارسی و لاتین هر دو پذیرفته می‌شوند.</li></ul>
+<b>۴) ورود فایل</b>
+<ul style="margin:4px 0 8px"><li>روی «انتخاب فایل اکسل» بزنید. سایت تعداد ردیف‌های معتبر و دارای خطا را نشان می‌دهد و تأیید می‌گیرد.</li>
+<li>بعد از ثبت، گزارش می‌آید: چند نفر جدید، چند نفر به‌روزرسانی و کدام ردیف‌ها با چه علتی وارد نشدند. ردیف‌های خطادار را در اکسل اصلاح و دوباره وارد کنید.</li>
+<li>${st?'دانش‌آموزی که در مدرسه دیگر ثبت شده باشد وارد نمی‌شود.':'دبیری که قبلاً حساب دارد، در همین مدرسه هم عضو تأییدشده می‌شود.'}</li></ul>
+<b>۵) ورود افراد</b>
+<ul style="margin:4px 0 8px"><li>افراد واردشده در صفحه ورود، ${code} را هم به‌عنوان <b>نام کاربری</b> و هم <b>رمز اولیه</b> می‌زنند. حسابشان همان لحظه ساخته می‌شود و باید رمز را تغییر دهند.</li>
+<li>افرادی که در فایل نیستند از «ثبت‌نام اولیه» درخواست می‌دهند و شما در بخش درخواست‌ها تأیید یا رد می‌کنید.</li>
+<li>زیر دکمه‌ها تعداد کسانی که از اکسل وارد شده‌اند و هنوز وارد سامانه نشده‌اند نمایش داده می‌شود.</li></ul>
+<b>⚠ نکته ایمنی</b>
+<ul style="margin:4px 0 8px"><li>تا وقتی فردی رمز اولیه را عوض نکرده، هر کس ${code} او را بداند می‌تواند وارد شود. بعد از ورود فایل، از افراد بخواهید زود وارد شوند و رمز را تغییر دهند.</li></ul>
+<div class="row"><button class="btn sec" id="hlp_tpl">دانلود قالب نمونه</button><button class="btn" id="hlp_close">بستن</button></div></div>`;
+  document.body.append(m);
+  m.querySelector('#hlp_close').onclick=()=>m.remove();
+  m.onclick=e=>{if(e.target===m)m.remove()};
+  m.querySelector('#hlp_tpl').onclick=()=>document.getElementById(st?'imp_s_tpl':'imp_t_tpl').click();
+}
+$('#imp_t_help').onclick=()=>showImportHelp('teacher');
+$('#imp_s_help').onclick=()=>showImportHelp('student');
+
 // ---- مدارک ----
 const CATS={birth_certificate:'شناسنامه (همه صفحات)',national_card:'کارت ملی',appreciation:'تقدیرنامه',decree:'حکم / ابلاغ',inservice:'لیست دوره‌های ضمن خدمت',plan_daily:'طرح درس روزانه',plan_annual:'طرح درس سالانه',other:'سایر مدارک'};
 $('#dcat').innerHTML=Object.entries(CATS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
@@ -824,8 +939,11 @@ async function loadList(){
   regs=(g.data||[]).filter(x=>(x.sstatus||{})[sc]==='pending');
   const st=await sb.from('profiles').select('*').eq('role','student').eq('school',sc).order('created_at');
   students=st.data||[];
+  const cq=k=>sb.from('registrations').select('personnel_code',{count:'exact',head:true}).is('user_id',null).eq('kind',k).eq('status','approved').contains('sstatus',{[sc]:'approved'});
+  const ct=await cq('teacher'),cs=await cq('student');impCnt={teacher:ct.count||0,student:cs.count||0};
 }
 function renderAdmin(){
+  $('#imp_t_cnt').textContent='واردشده از اکسل و هنوز وارد سامانه نشده: '+impCnt.teacher+' نفر';
   $('#regs').innerHTML=regs.length?`<table><tbody>${regs.map(r=>`<tr><td>${r.kind==='student'?'دانش‌آموز':'همکار'}${(r.schools||[]).length>1?' (هر دو مدرسه)':''}</td><td>${esc(r.full_name)}</td><td dir="ltr">${esc(r.personnel_code)}</td><td dir="ltr">${esc(r.mobile)}</td><td><button class="btn sm" data-ra="${esc(r.personnel_code)}">تأیید</button> <button class="btn sec sm" data-rr="${esc(r.personnel_code)}">رد</button></td></tr>`).join('')}</tbody></table>`:'<div class="banner">درخواست جدیدی وجود ندارد.</div>';
   $('#regs').querySelectorAll('[data-ra]').forEach(b=>b.onclick=async()=>{b.disabled=true;const c=b.dataset.ra;
     const r=await sb.rpc('approve_registration',{p_code:c,p_school:me.admin_school});if(r.error){alert(r.error.message);b.disabled=false;return}
