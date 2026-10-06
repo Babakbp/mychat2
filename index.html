@@ -216,6 +216,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <button class="btn" id="ex">خروجی اکسل (XLSX)</button>
 <button class="btn sec" id="exp">خروجی عکس‌ها</button>
 <button class="btn" id="exall">⬇ دانلود پوشه کامل همه دبیران</button>
+<button class="btn sec" id="delall_t" style="color:#c0392b">🗑 حذف تمام همکاران</button>
 </div>
 <div class="tw"><table><thead><tr><th>ردیف</th><th>عکس</th><th>نام</th><th>نام خانوادگی</th><th>کد پرسنلی</th><th>کد ملی</th><th>تلفن همراه</th><th>ساعت همکاری در هفته</th><th>وضعیت</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
 <div id="empty" class="banner hide">هنوز ثبت‌نامی انجام نشده است.</div>
@@ -227,7 +228,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <div class="row" style="margin-top:8px"><button class="btn sm" id="imp_s_pick">انتخاب فایل اکسل</button><button class="btn sec sm" id="imp_s_tpl">دانلود قالب نمونه</button><button class="btn sec sm" id="imp_s_help">📘 راهنما</button><input type="file" id="imp_s_file" accept=".xlsx" class="hide"></div>
 <div id="imp_s_cnt" style="margin-top:6px;font-size:13px"></div><div id="imp_s_res" style="margin-top:6px;font-size:13px"></div></div>
 <div class="banner">تأیید درخواست‌های ثبت‌نام (همکار و دانش‌آموز) در تب «پنل دبیران» انجام می‌شود.</div>
-<div class="row" style="margin-bottom:10px"><input id="sq" placeholder="جستجو: نام یا کد ملی" style="flex:1;min-width:180px"><button class="btn sec" id="srf">بازخوانی</button><button class="btn" id="sex">خروجی اکسل (XLSX)</button><button class="btn sec" id="sexp">خروجی عکس‌ها</button></div>
+<div class="row" style="margin-bottom:10px"><input id="sq" placeholder="جستجو: نام یا کد ملی" style="flex:1;min-width:180px"><button class="btn sec" id="srf">بازخوانی</button><button class="btn" id="sex">خروجی اکسل (XLSX)</button><button class="btn sec" id="sexp">خروجی عکس‌ها</button><button class="btn sec" id="delall_s" style="color:#c0392b">🗑 حذف اطلاعات همه دانش‌آموزان</button></div>
 <div class="tw"><table><thead><tr><th>ردیف</th><th>عکس</th><th>کد ملی</th><th>نام</th><th>نام خانوادگی</th><th>نام پدر</th><th>تاریخ تولد</th><th>سریال شناسنامه</th><th>تلفن مادر</th><th>تلفن پدر</th><th>پرونده</th></tr></thead><tbody id="stb"></tbody></table></div>
 </section>
 
@@ -904,22 +905,19 @@ async function formPdfBlob(p,sch,photoBlob){
   await loadLib(LIBS.h2c,()=>window.html2canvas);await loadLib(LIBS.pdf,()=>window.jspdf);
   const url=photoBlob?URL.createObjectURL(photoBlob):'';
   const host=document.createElement('div');
-  host.style.cssText='position:fixed;left:-10000px;top:0;width:794px;background:#fff;color:#000;padding:34px 40px;box-sizing:border-box;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif;line-height:1.7';
+  host.style.cssText='position:fixed;left:-10000px;top:0;width:794px;background:#fff;color:#000;padding:26px 30px;box-sizing:border-box;direction:rtl;font-family:Vazirmatn,Tahoma,sans-serif;line-height:1.7';
   host.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px"><div style="width:113px;height:151px"></div><div style="flex:1;text-align:center"><div style="font-size:22px;font-weight:700">فرم مشخصات همکار</div>${sch?`<div style="font-size:16px;margin:2px 0">مدرسه ${esc(fa(schName(sch)))}</div>`:''}<div style="font-size:12px">تاریخ تهیه: ${new Date().toLocaleDateString('fa-IR')}</div></div><div style="width:113px;height:151px">${url?`<img src="${url}" style="width:113px;height:151px;object-fit:cover;border:1px solid #444" alt="">`:''}</div></div>
-<table style="width:100%;border-collapse:collapse">${teacherRows(p).map(([k,v])=>`<tr><td style="border:1px solid #444;padding:5px 10px;font-size:13px;width:30%;background:#eee;font-weight:600">${k}</td><td style="border:1px solid #444;padding:5px 10px;font-size:13px">${esc(fa(String(v==null?'':v)))}</td></tr>`).join('')}</table>
-<div style="display:flex;justify-content:space-between;margin-top:36px;font-size:13px"><span>امضای همکار</span><span>امضای مدیر</span></div>`;
+<style>.ft{width:100%;border-collapse:collapse;table-layout:fixed}.ft td{border:1px solid #444;padding:3px 6px;font-size:12px;line-height:1.5;vertical-align:top;word-break:break-word}.ft td.k{background:#eee;font-weight:600}</style><table class="ft"><colgroup><col style="width:15%"><col style="width:35%"><col style="width:15%"><col style="width:35%"></colgroup>${compactRowsHtml(teacherRows(p))}</table>
+<div style="display:flex;justify-content:space-between;margin-top:22px;font-size:13px"><span>امضای همکار</span><span>امضای مدیر</span></div>`;
   document.body.append(host);
   const im=host.querySelector('img');if(im&&!im.complete)await new Promise(r=>{im.onload=im.onerror=r});
   try{await document.fonts.ready}catch(e){}
   const canvas=await html2canvas(host,{scale:2,backgroundColor:'#ffffff',useCORS:true});
   host.remove();if(url)URL.revokeObjectURL(url);
   const {jsPDF}=window.jspdf;const pdf=new jsPDF({unit:'mm',format:'a4',orientation:'p'});
-  const pw=210,ph=297,pagePx=Math.floor(canvas.width*ph/pw);
-  for(let y=0,pg=0;y<canvas.height;y+=pagePx,pg++){
-    const sl=document.createElement('canvas');sl.width=canvas.width;sl.height=Math.min(pagePx,canvas.height-y);
-    sl.getContext('2d').drawImage(canvas,0,y,canvas.width,sl.height,0,0,canvas.width,sl.height);
-    if(pg)pdf.addPage();pdf.addImage(sl.toDataURL('image/jpeg',0.92),'JPEG',0,0,pw,sl.height*pw/canvas.width);
-  }
+  const pw=210,ph=297;let w=pw,h=canvas.height*pw/canvas.width;
+  if(h>ph){w=pw*ph/h;h=ph}
+  pdf.addImage(canvas.toDataURL('image/jpeg',0.92),'JPEG',(pw-w)/2,0,w,h);
   return pdf.output('blob');
 }
 async function exportTeacherFolders(people,btn,sch,zipName){
@@ -958,6 +956,51 @@ async function exportTeacherFolders(people,btn,sch,zipName){
 }
 $('#exall').onclick=e=>exportTeacherFolders(list,e.currentTarget,me.admin_school,'پوشه-همه-دبیران');
 $('#dl_mine').onclick=e=>{const sc=coopSel||(mems[0]||{}).school;exportTeacherFolders([{...me,...coopDetails(sc)}],e.currentTarget,sc,'پوشه-من')};
+
+// ---- فرم فشرده (۴ ستون) ----
+function compactRowsHtml(rows){
+  const it=rows.map(([k,v])=>[k,esc(fa(String(v==null?'':v)))]);
+  const pr=(a,b)=>`<tr><td class="k">${a[0]}</td><td>${a[1]}</td>${b?`<td class="k">${b[0]}</td><td>${b[1]}</td>`:'<td class="k"></td><td></td>'}</tr>`;
+  let out='',buf=null;
+  for(const x of it){
+    if(x[1].length>32){if(buf){out+=pr(buf,null);buf=null}out+=`<tr><td class="k">${x[0]}</td><td colspan="3">${x[1]}</td></tr>`}
+    else if(buf){out+=pr(buf,x);buf=null}else buf=x;
+  }
+  if(buf)out+=pr(buf,null);
+  return out;
+}
+// ---- حذف دسته‌جمعی با تأیید تایپی ----
+function confirmWord(title,msg){return new Promise(res=>{
+  const m=document.createElement('div');m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:70;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto';
+  m.innerHTML=`<div class="card" style="max-width:460px;width:100%;margin:0"><h3 style="margin-top:0;color:#c0392b">⚠ ${title}</h3><p style="line-height:2">${msg}</p><label>برای تأیید، کلمه <b>حذف</b> را در کادر زیر تایپ کنید:</label><input id="cw_in" autocomplete="off"><div class="row" style="margin-top:12px"><button class="btn" id="cw_ok" disabled style="background:#c0392b">حذف نهایی</button><button class="btn sec" id="cw_no">انصراف</button></div></div>`;
+  document.body.append(m);const inp=m.querySelector('#cw_in'),ok=m.querySelector('#cw_ok');
+  inp.oninput=()=>{ok.disabled=inp.value.replace(/[\u200c\s]/g,'')!=='حذف'};
+  const done=v=>{m.remove();res(v)};ok.onclick=()=>done(true);m.querySelector('#cw_no').onclick=()=>done(false);inp.focus();
+})}
+async function deleteAll(kind,btn){
+  const st=kind==='student',sc=me.admin_school;
+  const yes=await confirmWord(st?'حذف اطلاعات همه دانش‌آموزان':'حذف تمام همکاران',
+    'همه '+(st?'دانش‌آموزان':'همکاران')+' مدرسه '+esc(schName(sc))+' (شامل حساب، اطلاعات، عکس، مدارک، درخواست‌ها و افراد واردشده از اکسل) برای همیشه حذف می‌شوند و بازگشتی ندارد.'+(st?'':' همکاری که عضو مدرسه دیگر هم باشد، فقط از فهرست همین مدرسه حذف می‌شود.'));
+  if(!yes)return;
+  const old=btn.textContent;btn.disabled=true;
+  try{
+    let ids;
+    if(st)ids=students.map(x=>x.id);
+    else{const r=await sb.rpc('teachers_only_here',{p_school:sc});if(r.error)throw r.error;ids=r.data||[]}
+    for(let i=0;i<ids.length;i+=5){
+      btn.textContent='در حال پاک‌کردن فایل‌ها… '+Math.min(i+5,ids.length)+' از '+ids.length;
+      await Promise.all(ids.slice(i,i+5).map(id=>Promise.all([wipeFolder('staff-docs',id),st?null:wipeFolder('chat-files',id)])));
+    }
+    btn.textContent='در حال حذف از دیتابیس…';
+    const r=await sb.rpc(st?'delete_all_students':'delete_all_teachers',{p_school:sc});
+    if(r.error)throw r.error;
+    alert('حذف انجام شد ('+(r.data||0)+' مورد).');
+  }catch(e){alert('حذف انجام نشد: '+(e.message||e)+' (آیا schema_v14.sql اجرا شده است؟)')}
+  btn.textContent=old;btn.disabled=false;open=null;sopen=null;
+  await loadList();renderAdmin();renderStudents();
+}
+$('#delall_t').onclick=e=>deleteAll('teacher',e.currentTarget);
+$('#delall_s').onclick=e=>deleteAll('student',e.currentTarget);
 
 // ---- مدارک ----
 const CATS={birth_certificate:'شناسنامه (همه صفحات)',national_card:'کارت ملی',appreciation:'تقدیرنامه',decree:'حکم / ابلاغ',inservice:'لیست دوره‌های ضمن خدمت',plan_daily:'طرح درس روزانه',plan_annual:'طرح درس سالانه',other:'سایر مدارک'};
@@ -1003,10 +1046,12 @@ async function printForm(p,sch){
   let pu='';
   if(p.photo_path){try{const r=await sb.storage.from('staff-docs').download(p.photo_path);if(!r.error&&r.data)pu=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>res('');fr.readAsDataURL(r.data)})}catch(e){}
     if(!pu)alert('عکس پرسنلی بارگذاری نشد؛ فرم بدون عکس چاپ می‌شود.')}
-  w.document.write(`<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فرم مشخصات - ${esc(p.full_name)}</title><link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet"><style>@page{size:A4;margin:0}body{margin:0;padding:12mm 14mm;font-family:Vazirmatn,Tahoma,sans-serif;color:#000;line-height:1.7}.hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.sp{width:30mm;height:40mm;flex:none}.tt{flex:1;text-align:center}h1{font-size:20px;margin:0}h2{font-size:15px;margin:2px 0}.d{font-size:12px}img{width:30mm;height:40mm;object-fit:cover;border:1px solid #444}table{width:100%;border-collapse:collapse}td{border:1px solid #444;padding:6px 10px;font-size:13px;vertical-align:top}td:first-child{width:30%;background:#eee;font-weight:600}.sig{display:flex;justify-content:space-between;margin-top:40px;font-size:13px}</style></head><body><div class="hd"><div class="sp"></div><div class="tt"><h1>فرم مشخصات همکار</h1>${sch?`<h2>مدرسه ${esc(fa(schName(sch)))}</h2>`:''}<div class="d">تاریخ چاپ: ${new Date().toLocaleDateString('fa-IR')}</div></div><div class="sp">${pu?`<img src="${pu}" alt="">`:''}</div></div><table>${rows.map(([k,v])=>`<tr><td>${k}</td><td>${esc(fa(String(v??'')))}</td></tr>`).join('')}</table><div class="sig"><span>امضای همکار</span><span>امضای مدیر</span></div></body></html>`);
+  w.document.write(`<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>فرم مشخصات - ${esc(p.full_name)}</title><link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet"><style>@page{size:A4;margin:0}body{margin:0;padding:10mm 12mm;font-family:Vazirmatn,Tahoma,sans-serif;color:#000;line-height:1.5}.hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.sp{width:30mm;height:40mm;flex:none}.tt{flex:1;text-align:center}h1{font-size:20px;margin:0}h2{font-size:15px;margin:2px 0}.d{font-size:12px}img{width:30mm;height:40mm;object-fit:cover;border:1px solid #444}table{width:100%;border-collapse:collapse;table-layout:fixed}td{border:1px solid #444;padding:3px 6px;font-size:11px;line-height:1.5;vertical-align:top;word-break:break-word}td.k{background:#eee;font-weight:600}.sig{display:flex;justify-content:space-between;margin-top:22px;font-size:12px}</style></head><body><div class="hd"><div class="sp"></div><div class="tt"><h1>فرم مشخصات همکار</h1>${sch?`<h2>مدرسه ${esc(fa(schName(sch)))}</h2>`:''}<div class="d">تاریخ چاپ: ${new Date().toLocaleDateString('fa-IR')}</div></div><div class="sp">${pu?`<img src="${pu}" alt="">`:''}</div></div><table><colgroup><col style="width:15%"><col style="width:35%"><col style="width:15%"><col style="width:35%"></colgroup>${compactRowsHtml(rows)}</table><div class="sig"><span>امضای همکار</span><span>امضای مدیر</span></div></body></html>`);
   w.document.close();
   const im=w.document.querySelector('img');if(im&&!im.complete)await new Promise(r=>{im.onload=im.onerror=r});
-  setTimeout(()=>{w.focus();w.print()},1200);
+  try{await w.document.fonts.ready}catch(e){}
+  {const H=w.document.body.scrollHeight,maxH=1122;if(H>maxH)w.document.body.style.zoom=(maxH/H*0.98).toFixed(3)}
+  setTimeout(()=>{w.focus();w.print()},600);
 }
 $('#prt').onclick=()=>{if(!me||!me.full_name||!me.national_id){alert('ابتدا اطلاعات فرم را ثبت کنید.');return}const sc=isAdm()?me.admin_school:(coopSel||(mems[0]||{}).school);printForm({...me,...(isAdm()?{}:coopDetails(sc))},sc)};
 
