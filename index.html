@@ -7,18 +7,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
-:root{--bg:#eef2f8;--card:#d3dcea;--tx:#1b2433;--mu:#4a5870;--br:#a9b7cc;--pr:#2457c5;--prt:#fff;--ok:#117a45;--wn:#a15c07;--me:#bcd0f2;--ot:#e4eaf4}
+:root{--bg:#eef2f8;--card:#d3dcea;--tx:#1b2433;--mu:#4a5870;--br:#a9b7cc;--pr:#2457c5;--prt:#fff;--btn:#3f5f93;--btnt:#ffffff;--sel:#e8a317;--selt:#1b2433;--ok:#117a45;--wn:#a15c07;--me:#bcd0f2;--ot:#e4eaf4;--pg1:#091731;--pg2:#12356b;--pg3:#0a2147;--schc:#ffffff;--crc:#e8eefc}
 .pwwrap{position:relative}
 .pwwrap input{padding-left:42px}
 .eye{position:absolute;left:6px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:18px;line-height:1;padding:4px;color:var(--tx)}
 .th{width:42px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--br);display:block;margin:auto}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:#0b1d3a linear-gradient(160deg,#091731 0%,#12356b 55%,#0a2147 100%) fixed;color:var(--tx);font-family:Vazirmatn,Tahoma,sans-serif;line-height:1.7}
+body{margin:0;min-height:100vh;background:var(--pg2) linear-gradient(160deg,var(--pg1) 0%,var(--pg2) 55%,var(--pg3) 100%) fixed;color:var(--tx);font-family:Vazirmatn,Tahoma,sans-serif;line-height:1.7}
 header{padding:14px 16px;background:var(--card);border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;gap:8px}
 h1{font-size:18px;margin:0}
 nav{display:flex;gap:6px;padding:10px 16px;overflow-x:auto}
-nav button{background:var(--card);border:1px solid var(--br);color:var(--tx);padding:8px 16px;border-radius:20px;font:inherit;cursor:pointer;white-space:nowrap}
-nav button.on{background:var(--pr);color:var(--prt);border-color:var(--pr)}
+nav button{background:var(--btn);border:1px solid var(--btn);color:var(--btnt);padding:8px 16px;border-radius:20px;font:inherit;cursor:pointer;white-space:nowrap}
+nav button.on{background:var(--sel);color:var(--selt);border-color:var(--sel)}
 main{max-width:860px;margin:0 auto;padding:0 16px 32px}
 .card{background:var(--card);border:1px solid var(--br);border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 8px 28px rgba(0,0,0,.28)}
 .banner{padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:14px;border:1px solid var(--br);background:var(--card)}
@@ -31,8 +31,10 @@ h3{margin:18px 0 8px;font-size:15px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips label{display:flex;align-items:center;gap:5px;color:var(--tx);border:1px solid var(--br);padding:5px 10px;border-radius:16px;margin:0}
 .chips input{width:auto}
-.btn{background:var(--pr);color:var(--prt);border:0;padding:10px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
-.btn.sec{background:var(--ot);color:var(--tx)}.btn.sm{padding:4px 12px;font-size:13px}
+.btn{background:var(--btn);color:var(--btnt);border:1px solid var(--btn);padding:10px 20px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer}
+.btn.sec{background:var(--btn);color:var(--btnt)}
+.btn.on,.btn:active:not(:disabled),nav button:active{background:var(--sel);color:var(--selt);border-color:var(--sel)}
+.btn:disabled{opacity:.55;cursor:default}.btn.sm{padding:4px 12px;font-size:13px}
 .err{font-size:13px;margin-top:6px;min-height:20px;color:#c0392b}
 #msgs{height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
 .m{max-width:80%;padding:8px 12px;border-radius:12px;background:var(--ot);align-self:flex-start;word-break:break-word}
@@ -47,17 +49,17 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 .tw{overflow-x:auto}.det{background:var(--bg);font-size:13px;color:var(--mu)}
 .tag{padding:2px 10px;border-radius:12px;font-size:12px;background:var(--ot)}
 .hide{display:none}
-.credit{color:#e8eefc;text-align:center;font-size:13px;padding:14px 8px 26px;text-shadow:0 1px 3px rgba(0,0,0,.4)}
-.credit a{color:#fff;font-weight:600}
+.credit{color:var(--crc);text-align:center;font-size:13px;padding:14px 8px 26px;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+.credit a{color:var(--crc);font-weight:600}
 .osr{display:flex;gap:6px;margin-bottom:6px}
 .osr input:first-child{flex:1}
 .btn.big{padding:16px 28px;font-size:17px}
 .col{display:flex;flex-direction:column;gap:8px}
 .col .btn{width:100%}
-.schline{color:#fff;text-align:center;font-weight:700;padding:6px 0 10px;font-size:16px;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+.schline{color:var(--schc);text-align:center;font-weight:700;padding:6px 0 10px;font-size:16px;text-shadow:0 1px 3px rgba(0,0,0,.4)}
 .stk{font-size:56px;line-height:1.2}
 .m img{max-width:100%;max-height:240px;border-radius:8px;display:block;margin-top:4px}
-.m a{color:var(--pr)}
+.m a{color:var(--tx);text-decoration:underline}
 #auth{max-width:380px;margin:40px auto}
 </style>
 </head>
@@ -95,6 +97,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 
 <div id="app" class="hide">
 <div id="schline" class="schline"></div>
+<div id="pwwarn" class="banner wn hide"></div>
 <nav id="nav" style="padding-inline:0"></nav>
 <div id="banner"></div>
 
@@ -157,6 +160,12 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <h3 style="margin-top:0">پنل سازنده</h3>
 <div id="cr_stats" class="banner"></div>
 <div id="cr_admins"></div>
+<h3>رنگ‌بندی برنامه</h3>
+<div class="banner wn" style="font-size:13px">تغییر رنگ‌ها برای همه کاربران اعمال می‌شود. اگر رنگ‌ها ناخوانا شد، «بازگشت به پیش‌فرض» را بزنید یا آدرس سایت را با <span dir="ltr">?reset-theme</span> در انتها باز کنید.</div>
+<div class="row" id="th_presets" style="margin-bottom:8px"></div>
+<div class="grid" id="th_grid"></div>
+<div class="row" style="margin-top:12px"><button class="btn" id="th_save">ذخیره برای همه کاربران</button><button class="btn sec" id="th_reset">بازگشت به پیش‌فرض</button></div>
+<div id="th_msg" class="err"></div>
 </section>
 
 <section id="v-stu" class="card hide">
@@ -216,7 +225,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <button class="btn" id="ex">خروجی اکسل (XLSX)</button>
 <button class="btn sec" id="exp">خروجی عکس‌ها</button>
 <button class="btn" id="exall">⬇ دانلود پوشه کامل همه دبیران</button>
-<button class="btn sec" id="delall_t" style="color:#c0392b">🗑 حذف تمام همکاران</button>
+<button class="btn sec" id="delall_t" style="border:2px solid #c0392b">🗑 حذف تمام همکاران</button>
 </div>
 <div class="tw"><table><thead><tr><th>ردیف</th><th>عکس</th><th>نام</th><th>نام خانوادگی</th><th>کد پرسنلی</th><th>کد ملی</th><th>تلفن همراه</th><th>ساعت همکاری در هفته</th><th>وضعیت</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
 <div id="empty" class="banner hide">هنوز ثبت‌نامی انجام نشده است.</div>
@@ -228,7 +237,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <div class="row" style="margin-top:8px"><button class="btn sm" id="imp_s_pick">انتخاب فایل اکسل</button><button class="btn sec sm" id="imp_s_tpl">دانلود قالب نمونه</button><button class="btn sec sm" id="imp_s_help">📘 راهنما</button><input type="file" id="imp_s_file" accept=".xlsx" class="hide"></div>
 <div id="imp_s_cnt" style="margin-top:6px;font-size:13px"></div><div id="imp_s_res" style="margin-top:6px;font-size:13px"></div></div>
 <div class="banner">تأیید درخواست‌های ثبت‌نام (همکار و دانش‌آموز) در تب «پنل دبیران» انجام می‌شود.</div>
-<div class="row" style="margin-bottom:10px"><input id="sq" placeholder="جستجو: نام یا کد ملی" style="flex:1;min-width:180px"><button class="btn sec" id="srf">بازخوانی</button><button class="btn" id="sex">خروجی اکسل (XLSX)</button><button class="btn sec" id="sexp">خروجی عکس‌ها</button><button class="btn sec" id="delall_s" style="color:#c0392b">🗑 حذف اطلاعات همه دانش‌آموزان</button></div>
+<div class="row" style="margin-bottom:10px"><input id="sq" placeholder="جستجو: نام یا کد ملی" style="flex:1;min-width:180px"><button class="btn sec" id="srf">بازخوانی</button><button class="btn" id="sex">خروجی اکسل (XLSX)</button><button class="btn sec" id="sexp">خروجی عکس‌ها</button><button class="btn sec" id="delall_s" style="border:2px solid #c0392b">🗑 حذف اطلاعات همه دانش‌آموزان</button></div>
 <div class="tw"><table><thead><tr><th>ردیف</th><th>عکس</th><th>کد ملی</th><th>نام</th><th>نام خانوادگی</th><th>نام پدر</th><th>تاریخ تولد</th><th>سریال شناسنامه</th><th>تلفن مادر</th><th>تلفن پدر</th><th>پرونده</th></tr></thead><tbody id="stb"></tbody></table></div>
 </section>
 
@@ -257,6 +266,18 @@ const authEmail=(c,k)=>`${EMAIL_BASE}+${k==='student'?'st':'sp'}${c}@${EMAIL_DOM
 // ============================================================================
 let sb,initErr='';
 try{if(typeof supabase==='undefined')initErr='lib';else if(!/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(SUPABASE_URL))initErr='url';else sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY)}catch(e){initErr='url'}
+
+// ---- رنگ‌بندی قابل تنظیم توسط سازنده ----
+const THEME_VARS=[['pg1','پس‌زمینه صفحه (رنگ اول)','#091731'],['pg2','پس‌زمینه صفحه (رنگ میانی)','#12356b'],['pg3','پس‌زمینه صفحه (رنگ آخر)','#0a2147'],['card','پنل‌ها و کارت‌ها','#d3dcea'],['bg','کادر ورودی‌ها و زمینه جزئیات','#eef2f8'],['tx','نوشته‌ها','#1b2433'],['mu','نوشته‌های کم‌رنگ','#4a5870'],['br','حاشیه‌ها','#a9b7cc'],['btn','دکمه‌ها در حالت عادی (همه دکمه‌ها همرنگ)','#3f5f93'],['btnt','نوشته روی دکمه‌ها','#ffffff'],['sel','دکمه انتخاب‌شده / فعال (تب فعال و هنگام کلیک)','#e8a317'],['selt','نوشته روی دکمه انتخاب‌شده','#1b2433'],['ot','حباب پیام دیگران و برچسب‌ها','#e4eaf4'],['me','حباب پیام‌های خودم','#bcd0f2'],['ok','پیام موفقیت و تأیید','#117a45'],['wn','پیام هشدار و در انتظار','#a15c07'],['schc','نوشته نام مدرسه بالای صفحه','#ffffff'],['crc','نوشته پایین صفحه (سازنده)','#e8eefc']];
+const THEME_PRESETS=[['آبی تیره (پیش‌فرض)',{}],['سبز',{pg1:'#0b2a1c',pg2:'#14532d',pg3:'#0b2e20',card:'#d5e6da',bg:'#eef7f0',br:'#a9c7b3',btn:'#2f6b45',me:'#c4e5cf',ot:'#e3f0e7',mu:'#41584a'}],['بنفش',{pg1:'#1e1034',pg2:'#3b1d6e',pg3:'#241049',card:'#e0d8ee',bg:'#f4f0fa',br:'#b9abd3',btn:'#5b3d99',me:'#d6c9f0',ot:'#ebe5f6',mu:'#574a70'}],['خاکستری',{pg1:'#2b3340',pg2:'#46526a',pg3:'#313a4b',card:'#e6e9ef',bg:'#f7f8fa',br:'#bcc3cf',btn:'#475569',me:'#d5dcea',ot:'#eceff4'}]];
+const noTheme=/[?&]reset-theme/.test(location.search);
+let themeNow={};
+const isHex=v=>/^#[0-9a-fA-F]{6}$/.test(v||'');
+function applyTheme(t){themeNow=t||{};for(const [k] of THEME_VARS){const v=themeNow[k];if(isHex(v))document.documentElement.style.setProperty('--'+k,v);else document.documentElement.style.removeProperty('--'+k)}}
+if(noTheme){try{localStorage.removeItem('theme')}catch(e){}}
+else{try{const c=JSON.parse(localStorage.getItem('theme')||'null');if(c)applyTheme(c)}catch(e){}}
+async function loadTheme(){if(noTheme||!sb||initErr)return;try{const {data}=await sb.from('app_settings').select('value').eq('key','theme').maybeSingle();const t=(data&&data.value)||{};applyTheme(t);localStorage.setItem('theme',JSON.stringify(t))}catch(e){}}
+loadTheme();
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dig=s=>String(s||'').replace(/[۰-۹]/g,d=>d.charCodeAt(0)-1776).replace(/[٠-٩]/g,d=>d.charCodeAt(0)-1632).trim();
@@ -342,7 +363,7 @@ $('#pb').onclick=async()=>{const a=dig($('#np1').value),e=$('#perr');e.style.col
   if(me&&a===me.personnel_code){e.textContent='رمز جدید نباید همان کد پرسنلی باشد.';return}
   const {error}=await sb.auth.updateUser({password:a});
   if(error){e.textContent='تغییر رمز انجام نشد: '+error.message;return}
-  await sb.rpc('password_changed');if(me)me.must_change=false;
+  await sb.rpc('password_changed');if(me){me.must_change=false;me.password_changed_at=new Date().toISOString()}
   $('#np1').value=$('#np2').value='';e.style.color='var(--ok)';e.textContent='رمز با موفقیت تغییر کرد.';render()};
 
 if(initErr){['li','rb','go_stu','go_tch'].forEach(i=>$('#'+i).disabled=true);aerr(initErr==='lib'?'کتابخانه Supabase بارگذاری نشد. اینترنت یا فیلترشکن را بررسی کنید.':'SUPABASE_URL درست وارد نشده است. باید شبیه https://xxxx.supabase.co باشد، بدون / آخر و بدون rest/v1.')}
@@ -395,7 +416,8 @@ function render(){
   $('#chs').innerHTML=apv.map(x=>`<option value="${x.school}"${x.school===chatSchool?' selected':''}>${esc(schName(x.school))}</option>`).join('');
   $('#chs').classList.toggle('hide',apv.length<1);$('#chs').disabled=apv.length<2;
   if(me.role==='teacher')renderCoop();
-  if(isCre()&&tab==='creator')renderCreator();
+  if(isCre()&&tab==='creator'){if(!$('#th_grid').children.length)buildThemeUI();renderCreator()}
+  checkPwReminder();
   $('#chatlock').classList.toggle('hide',canChat());$('#cf').classList.toggle('hide',!canChat());
   renderChat();if(isAdm()){renderAdmin();renderStudents()}
 }
@@ -592,7 +614,7 @@ function renderStudents(){
   $('#imp_s_cnt').textContent='واردشده از اکسل و هنوز وارد سامانه نشده: '+impCnt.student+' نفر';
   const q=dig($('#sq').value);
   const L=students.filter(s=>!q||[s.full_name,s.national_id].some(v=>String(v||'').includes(q)));
-  $('#stb').innerHTML=L.map((s,i)=>{const ok=s.birth_date&&s.photo_path,ex=s.student_extra||{};return `<tr><td>${i+1}</td><td>${thumbHtml(s)}</td><td dir="ltr">${esc(s.national_id)}</td><td><a href="#" data-sd="${esc(s.id)}">${esc(s.first_name||s.full_name)}</a></td><td>${esc(s.last_name)}</td><td>${esc(((ex.father_first||'')+' '+(ex.father_last||'')).trim())}</td><td dir="ltr">${esc(s.birth_date)}</td><td dir="ltr">${esc(ex.cert_serial)}</td><td dir="ltr">${esc(s.mother_mobile)}</td><td dir="ltr">${esc(s.father_mobile)}</td><td><span class="tag ${ok?'ok':'wn'}">${ok?'کامل':'ناقص'}</span></td></tr>`+(sopen===s.id?`<tr><td colspan="11" class="det">تاریخ تولد: ${esc(s.birth_date)}<br>تلفن پدر: ${esc(s.father_mobile)} | تلفن مادر: ${esc(s.mother_mobile)} | تلفن ثابت: ${esc(s.home_phone)}<br>${extraHtml(s)}<img id="sph" class="hide" alt="" style="max-width:150px;border-radius:6px;margin-top:6px"><hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد ملی است ('+esc(s.national_id)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="snpw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-ssp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-srp="${esc(s.id)}">بازنشانی به کد ملی</button></div><div style="margin-top:8px"><button class="btn sec sm" data-sdel="${esc(s.id)}" style="color:#c0392b">🗑 حذف دانش‌آموز از فهرست</button></div></td></tr>`:'')}).join('');
+  $('#stb').innerHTML=L.map((s,i)=>{const ok=s.birth_date&&s.photo_path,ex=s.student_extra||{};return `<tr><td>${i+1}</td><td>${thumbHtml(s)}</td><td dir="ltr">${esc(s.national_id)}</td><td><a href="#" data-sd="${esc(s.id)}">${esc(s.first_name||s.full_name)}</a></td><td>${esc(s.last_name)}</td><td>${esc(((ex.father_first||'')+' '+(ex.father_last||'')).trim())}</td><td dir="ltr">${esc(s.birth_date)}</td><td dir="ltr">${esc(ex.cert_serial)}</td><td dir="ltr">${esc(s.mother_mobile)}</td><td dir="ltr">${esc(s.father_mobile)}</td><td><span class="tag ${ok?'ok':'wn'}">${ok?'کامل':'ناقص'}</span></td></tr>`+(sopen===s.id?`<tr><td colspan="11" class="det">تاریخ تولد: ${esc(s.birth_date)}<br>تلفن پدر: ${esc(s.father_mobile)} | تلفن مادر: ${esc(s.mother_mobile)} | تلفن ثابت: ${esc(s.home_phone)}<br>${extraHtml(s)}<img id="sph" class="hide" alt="" style="max-width:150px;border-radius:6px;margin-top:6px"><hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد ملی است ('+esc(s.national_id)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="snpw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-ssp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-srp="${esc(s.id)}">بازنشانی به کد ملی</button></div><div style="margin-top:8px"><button class="btn sec sm" data-sdel="${esc(s.id)}" style="border:2px solid #c0392b">🗑 حذف دانش‌آموز از فهرست</button></div></td></tr>`:'')}).join('');
   $('#stb').insertAdjacentHTML('beforeend',impRowsHtml('student',L.length,q));bindImpDel($('#stb'));
   $('#stb').querySelectorAll('[data-sd]').forEach(a=>a.onclick=e=>{e.preventDefault();sopen=sopen===a.dataset.sd?null:a.dataset.sd;renderStudents()});
   $('#stb').querySelectorAll('[data-ssp]').forEach(b=>b.onclick=()=>{const v=dig($('#snpw').value);if(v.length<8){alert('رمز باید حداقل ۸ نویسه باشد.');return}adminSetPw(b.dataset.ssp,v)});
@@ -735,7 +757,7 @@ function fillCoopFrom(d){$('#teaching_field').value=d.teaching_field||'';$('#pos
   document.querySelectorAll('#grades input').forEach(i=>i.checked=(d.grades||[]).includes(i.value));
   document.querySelectorAll('#days input').forEach(i=>i.checked=(d.work_days||[]).includes(i.value))}
 function renderCoop(){
-  $('#coop_tabs').innerHTML=mems.map(x=>`<button class="btn ${x.school===coopSel?'':'sec'} sm" data-cs="${x.school}">${esc(schName(x.school))}${x.status==='approved'?'':' (در انتظار)'}</button>`).join('');
+  $('#coop_tabs').innerHTML=mems.map(x=>`<button class="btn ${x.school===coopSel?'on':''} sm" data-cs="${x.school}">${esc(schName(x.school))}${x.status==='approved'?'':' (در انتظار)'}</button>`).join('');
   $('#coop_tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{coopSel=b.dataset.cs;coopFilled=false;renderCoop()});
   const m=mems.find(x=>x.school===coopSel);$('#coop_body').classList.toggle('hide',!m);
   if(m){
@@ -1002,6 +1024,44 @@ async function deleteAll(kind,btn){
 $('#delall_t').onclick=e=>deleteAll('teacher',e.currentTarget);
 $('#delall_s').onclick=e=>deleteAll('student',e.currentTarget);
 
+// ---- ویرایشگر رنگ (پنل سازنده) ----
+function readThemeInputs(){const o={};document.querySelectorAll('#th_grid [data-tv]').forEach(i=>{if(isHex(i.value))o[i.dataset.tv]=i.value.toLowerCase()});return o}
+function setThemeInputs(t){document.querySelectorAll('#th_grid [data-tv]').forEach(i=>{const d=THEME_VARS.find(x=>x[0]===i.dataset.tv)[2];const v=isHex(t[i.dataset.tv])?t[i.dataset.tv]:d;i.value=v;document.querySelector('#th_grid [data-th="'+i.dataset.tv+'"]').value=v})}
+function buildThemeUI(){
+  $('#th_grid').innerHTML=THEME_VARS.map(([k,l,d])=>{const v=isHex(themeNow[k])?themeNow[k]:d;return `<div><label>${l}</label><div class="row"><input type="color" data-tv="${k}" value="${v}" style="width:56px;height:38px;padding:2px;flex:none"><input class="ltr" data-th="${k}" value="${v}" maxlength="7" style="max-width:110px"></div></div>`}).join('');
+  $('#th_grid').querySelectorAll('[data-tv]').forEach(i=>i.oninput=()=>{document.querySelector('#th_grid [data-th="'+i.dataset.tv+'"]').value=i.value;applyTheme(readThemeInputs())});
+  $('#th_grid').querySelectorAll('[data-th]').forEach(i=>i.oninput=()=>{if(isHex(i.value)){document.querySelector('#th_grid [data-tv="'+i.dataset.th+'"]').value=i.value;applyTheme(readThemeInputs())}});
+  $('#th_presets').innerHTML=THEME_PRESETS.map(([n],i)=>`<button class="btn sec sm" data-pi="${i}">${n}</button>`).join('');
+  $('#th_presets').querySelectorAll('button').forEach(b=>b.onclick=()=>{const pr=THEME_PRESETS[+b.dataset.pi][1];setThemeInputs(pr);applyTheme(readThemeInputs())});
+}
+$('#th_save').onclick=async()=>{
+  const e=$('#th_msg');e.style.color='#c0392b';e.textContent='';const t=readThemeInputs();
+  const {error}=await sb.from('app_settings').upsert({key:'theme',value:t,updated_at:new Date().toISOString()});
+  if(error){e.textContent='ذخیره نشد: '+error.message+' (آیا schema_v15.sql اجرا شده است؟)';return}
+  try{localStorage.setItem('theme',JSON.stringify(t))}catch(x){}
+  e.style.color='var(--ok)';e.textContent='رنگ‌ها برای همه کاربران ذخیره شد.';
+};
+$('#th_reset').onclick=async()=>{
+  if(!confirm('رنگ‌ها به حالت پیش‌فرض برگردد؟'))return;
+  const e=$('#th_msg');e.style.color='#c0392b';e.textContent='';
+  const {error}=await sb.from('app_settings').upsert({key:'theme',value:{},updated_at:new Date().toISOString()});
+  if(error){e.textContent='انجام نشد: '+error.message;return}
+  try{localStorage.removeItem('theme')}catch(x){}
+  applyTheme({});setThemeInputs({});e.style.color='var(--ok)';e.textContent='رنگ‌ها به پیش‌فرض برگشت.';
+};
+// ---- یادآوری ۳۰ روزه تغییر رمز برای مدیران (بدون اجبار) ----
+function checkPwReminder(){
+  const el=$('#pwwarn');
+  if(!me||!isAdm()){el.classList.add('hide');return}
+  const last=Math.max(new Date(me.password_changed_at||me.created_at||0).getTime(),new Date(me.pw_reminder_at||0).getTime());
+  const days=Math.floor((Date.now()-last)/864e5);
+  if(!last||days<30){el.classList.add('hide');return}
+  el.innerHTML='🔐 حدود '+days+' روز از آخرین تغییر رمز شما گذشته است. برای امنیت بیشتر پیشنهاد می‌شود رمز را تغییر دهید (اجباری نیست).<div class="row" style="margin-top:8px"><button class="btn sm" id="pw_go">تغییر رمز</button><button class="btn sec sm" id="pw_later">بعداً یادآوری کن</button></div>';
+  el.classList.remove('hide');
+  $('#pw_go').onclick=()=>{tab='acct';render()};
+  $('#pw_later').onclick=async()=>{const {error}=await sb.rpc('snooze_password_reminder');if(!error)me.pw_reminder_at=new Date().toISOString();el.classList.add('hide')};
+}
+
 // ---- مدارک ----
 const CATS={birth_certificate:'شناسنامه (همه صفحات)',national_card:'کارت ملی',appreciation:'تقدیرنامه',decree:'حکم / ابلاغ',inservice:'لیست دوره‌های ضمن خدمت',plan_daily:'طرح درس روزانه',plan_annual:'طرح درس سالانه',other:'سایر مدارک'};
 $('#dcat').innerHTML=Object.entries(CATS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
@@ -1071,7 +1131,7 @@ async function loadList(){
 function impRowsHtml(kind,start,q){
   const st=kind==='student';
   return impRows.filter(r=>r.kind===kind&&(!q||[r.full_name,r.personnel_code,r.mobile].some(v=>String(v||'').includes(q)))).map((r,i)=>{
-    const n=start+i+1,tag='<span class="tag">واردشده از اکسل – هنوز وارد نشده</span> <button class="btn sec sm" data-idel="'+esc(r.personnel_code)+'" style="color:#c0392b">حذف</button>';
+    const n=start+i+1,tag='<span class="tag">واردشده از اکسل – هنوز وارد نشده</span> <button class="btn sec sm" data-idel="'+esc(r.personnel_code)+'" style="border:2px solid #c0392b">حذف</button>';
     return st?`<tr><td>${n}</td><td>—</td><td dir="ltr">${esc(r.personnel_code)}</td><td>${esc(r.first_name)}</td><td>${esc(r.last_name)}</td><td colspan="4" dir="ltr" style="text-align:center">تلفن همراه: ${esc(r.mobile)}</td><td></td><td>${tag}</td></tr>`
       :`<tr><td>${n}</td><td>—</td><td>${esc(r.first_name)}</td><td>${esc(r.last_name)}</td><td dir="ltr">${esc(r.personnel_code)}</td><td>—</td><td dir="ltr">${esc(r.mobile)}</td><td></td><td colspan="2">${tag}</td></tr>`}).join('')
 }
@@ -1094,7 +1154,7 @@ function renderAdmin(){
   let L=list.filter(s=>!q||[s.full_name,s.national_id,s.personnel_code,s.teaching_field].some(v=>String(v||'').includes(q)));
   if(onlyPending)L=L.filter(s=>s.mstatus!=='approved');
   $('#empty').classList.toggle('hide',list.length>0||impRows.some(r=>r.kind==='teacher'));$('#fl').textContent=onlyPending?'نمایش همه':'فقط در انتظار تأیید';
-  $('#tb').innerHTML=L.map((s,i)=>`<tr><td>${i+1}</td><td>${thumbHtml(s)}</td><td><a href="#" data-d="${esc(s.id)}">${esc(s.first_name||s.full_name||s.email)}</a></td><td>${esc(s.last_name)}</td><td dir="ltr">${esc(s.personnel_code)}</td><td dir="ltr">${esc(s.national_id)}</td><td dir="ltr">${esc(s.mobile)}</td><td>${esc(s.weekly_hours)}</td><td><span class="tag ${s.mstatus==='approved'?'ok':'wn'}">${s.mstatus==='approved'?'تأییدشده':'در انتظار'}</span></td><td><button class="btn sm ${s.mstatus==='approved'?'sec':''}" data-a="${esc(s.id)}">${s.mstatus==='approved'?'لغو تأیید':'تأیید'}</button> <button class="btn sec sm" data-dl="${esc(s.id)}" title="دانلود پوشه کامل (مدارک، عکس و PDF فرم)">⬇ پوشه</button></td></tr>`+(open===s.id?`<tr><td colspan="10" class="det"><img id="tph" class="hide" alt="" style="max-width:110px;border-radius:6px"><br>ایمیل: ${esc(s.email)} | کد ملی: ${esc(s.national_id)} | مدرک: ${esc(s.degree)} ${esc(s.field_of_study)}<br>سمت: ${esc(s.position)} | وضعیت همکاری: ${esc(s.emp_status)} | ساعت تدریس: ${esc(s.weekly_hours)} | موظف: ${esc(s.mandatory_hours)} | غیرموظف: ${esc(s.extra_hours)} | سابقه: ${esc(s.service_years)} سال | پایه‌ها: ${esc((s.grades||[]).join('، '))} | روزها: ${esc((s.work_days||[]).join('، '))}<br>همسر: ${esc(s.spouse_name)} ${esc(s.spouse_job)} ${esc(s.spouse_phone)} | فرزند: ${esc(s.children)}<br>همراه: ${esc(s.mobile)} | ثابت: ${esc(s.home_phone)} | اضطراری: ${esc(s.emergency_phone)}<br>آدرس: ${esc(s.address)}${extraHtmlT(s)}<hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد پرسنلی است ('+esc(s.personnel_code)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="npw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-sp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-rp="${esc(s.id)}">بازنشانی به کد پرسنلی</button></div><hr><b>مدارک:</b> <span id="dl-${esc(s.id)}">…</span><div style="margin-top:8px"><button class="btn sec sm" data-p="${esc(s.id)}">🖨 چاپ فرم مشخصات</button> <button class="btn sec sm" data-dl="${esc(s.id)}">⬇ دانلود پوشه کامل</button> <button class="btn sec sm" data-del="${esc(s.id)}" style="color:#c0392b">🗑 حذف از فهرست</button></div></td></tr>`:'')).join('');
+  $('#tb').innerHTML=L.map((s,i)=>`<tr><td>${i+1}</td><td>${thumbHtml(s)}</td><td><a href="#" data-d="${esc(s.id)}">${esc(s.first_name||s.full_name||s.email)}</a></td><td>${esc(s.last_name)}</td><td dir="ltr">${esc(s.personnel_code)}</td><td dir="ltr">${esc(s.national_id)}</td><td dir="ltr">${esc(s.mobile)}</td><td>${esc(s.weekly_hours)}</td><td><span class="tag ${s.mstatus==='approved'?'ok':'wn'}">${s.mstatus==='approved'?'تأییدشده':'در انتظار'}</span></td><td><button class="btn sm ${s.mstatus==='approved'?'sec':''}" data-a="${esc(s.id)}">${s.mstatus==='approved'?'لغو تأیید':'تأیید'}</button> <button class="btn sec sm" data-dl="${esc(s.id)}" title="دانلود پوشه کامل (مدارک، عکس و PDF فرم)">⬇ پوشه</button></td></tr>`+(open===s.id?`<tr><td colspan="10" class="det"><img id="tph" class="hide" alt="" style="max-width:110px;border-radius:6px"><br>ایمیل: ${esc(s.email)} | کد ملی: ${esc(s.national_id)} | مدرک: ${esc(s.degree)} ${esc(s.field_of_study)}<br>سمت: ${esc(s.position)} | وضعیت همکاری: ${esc(s.emp_status)} | ساعت تدریس: ${esc(s.weekly_hours)} | موظف: ${esc(s.mandatory_hours)} | غیرموظف: ${esc(s.extra_hours)} | سابقه: ${esc(s.service_years)} سال | پایه‌ها: ${esc((s.grades||[]).join('، '))} | روزها: ${esc((s.work_days||[]).join('، '))}<br>همسر: ${esc(s.spouse_name)} ${esc(s.spouse_job)} ${esc(s.spouse_phone)} | فرزند: ${esc(s.children)}<br>همراه: ${esc(s.mobile)} | ثابت: ${esc(s.home_phone)} | اضطراری: ${esc(s.emergency_phone)}<br>آدرس: ${esc(s.address)}${extraHtmlT(s)}<hr><b>رمز عبور:</b> ${s.must_change?(s.pw_is_code?('هنوز تغییر نداده؛ رمز فعلی همان کد پرسنلی است ('+esc(s.personnel_code)+')'):'رمز موقت توسط مدیر تعیین شده و هنوز تغییر نکرده است'):'توسط خود کاربر تغییر کرده و قابل مشاهده نیست'}<div class="row" style="margin-top:6px"><input id="npw" placeholder="رمز جدید (حداقل ۸ نویسه)" class="ltr" style="max-width:220px"><button class="btn sm" data-sp="${esc(s.id)}">تنظیم رمز</button><button class="btn sec sm" data-rp="${esc(s.id)}">بازنشانی به کد پرسنلی</button></div><hr><b>مدارک:</b> <span id="dl-${esc(s.id)}">…</span><div style="margin-top:8px"><button class="btn sec sm" data-p="${esc(s.id)}">🖨 چاپ فرم مشخصات</button> <button class="btn sec sm" data-dl="${esc(s.id)}">⬇ دانلود پوشه کامل</button> <button class="btn sec sm" data-del="${esc(s.id)}" style="border:2px solid #c0392b">🗑 حذف از فهرست</button></div></td></tr>`:'')).join('');
   if(!onlyPending){$('#tb').insertAdjacentHTML('beforeend',impRowsHtml('teacher',L.length,q));bindImpDel($('#tb'))}
   $('#tb').querySelectorAll('[data-a]').forEach(b=>b.onclick=async()=>{const s=list.find(x=>x.id===b.dataset.a);
     const {error}=await sb.rpc('set_membership',{p_user:s.id,p_school:me.admin_school,p_status:s.mstatus==='approved'?'pending':'approved'});if(error)alert(error.message);else{await loadList();renderAdmin()}});
@@ -1126,6 +1186,7 @@ new MutationObserver(ms=>ms.forEach(m=>{m.addedNodes.forEach(faTxt);if(m.type===
 faTxt(document.body);
 document.addEventListener('input',e=>{const t=e.target;
   if(t.closest&&t.closest('.pwwrap'))return;
+  if(t.dataset&&('th' in t.dataset))return;
   if(['npw','snpw'].includes(t.id)||(t.id||'').startsWith('cpw_'))return;
   if((t.tagName==='INPUT'&&['text','tel','search',''].includes(t.type))||t.tagName==='TEXTAREA'){const v=t.value,u=fa(v);if(u!==v){const c=t.selectionStart;t.value=u;try{t.setSelectionRange(c,c)}catch(x){}}}},true);
 </script>
