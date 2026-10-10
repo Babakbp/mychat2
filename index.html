@@ -391,7 +391,7 @@ async function onSession(s){
   me=data;filled=false;sfilled=false;scFilled=false;
   if(me&&me.role==='creator'&&!(await ensureAal2()))return;
   await loadSchoolInfo();
-  mems=[];if(me&&me.role==='teacher'){const rm=await sb.from('memberships').select('*').eq('user_id',me.id);mems=rm.data||[]}
+  mems=[];if(me&&me.role==='teacher'){const rm=await sb.from('memberships_dec').select('*').eq('user_id',me.id);mems=rm.data||[]}
   if(me){chatSchool=me.role==='admin'?me.admin_school:((mems.find(x=>x.status==='approved')||{}).school||null);coopSel=(mems[0]||{}).school||null;if(lastUid!==me.id){lastUid=me.id;tab=me.role==='creator'?'creator':me.role==='admin'?'admin':me.role==='student'?'stu':(mems.some(x=>x.status==='approved')?'chat':'form')}}
   $('#auth').classList.add('hide');$('#app').classList.remove('hide');$('#out').classList.remove('hide');$('#who').classList.remove('hide');
   if(!me){$('#banner').className='banner wn';$('#banner').textContent='ورود انجام شد اما پروفایل شما خوانده نشد'+(pe?': '+pe.message:'')+'. مطمئن شوید schema.sql کامل اجرا شده و برای این کاربر ردیف پروفایل ساخته شده است.';return}
@@ -797,7 +797,7 @@ function renderCoop(){
   $('#coop_req').querySelectorAll('button').forEach(b=>b.onclick=async()=>{
     const {error}=await sb.from('memberships').insert({user_id:me.id,school:b.dataset.rq,details:{}});
     if(error){alert('ثبت درخواست انجام نشد: '+error.message);return}
-    const r=await sb.from('memberships').select('*').eq('user_id',me.id);mems=r.data||[];coopSel=b.dataset.rq;coopFilled=false;render()});
+    const r=await sb.from('memberships_dec').select('*').eq('user_id',me.id);mems=r.data||[];coopSel=b.dataset.rq;coopFilled=false;render()});
 }
 $('#coop_save').onclick=async()=>{
   const e=$('#coop_err');e.style.color='#c0392b';e.textContent='';
@@ -831,7 +831,7 @@ async function renderCreator(){
     const c=await sb.from('memberships').select('user_id',{count:'exact',head:true}).eq('school',k).eq('status','pending');
     out.push(`<div><b>${esc(schName(k))}</b>: دانش‌آموز ${a.count||0} | دبیر تأییدشده ${b.count||0} | دبیر در انتظار ${c.count||0}</div>`)}
   $('#cr_stats').innerHTML=out.join('');
-  const ad=await sb.from('profiles').select('id,admin_school,username,full_name').eq('role','admin');
+  const ad=await sb.from('profiles_dec').select('id,admin_school,username,full_name').eq('role','admin');
   $('#cr_admins').innerHTML=['raz','mehr'].map(k=>{const a=(ad.data||[]).find(x=>x.admin_school===k);
     return `<div class="banner"><b>مدیر مدرسه ${esc(schName(k))}</b><br>`+(a?`نام کاربری فعلی: <span dir="ltr">${esc(a.username)}</span>${a.full_name?' | '+esc(a.full_name):''}<div class="row" style="margin-top:8px"><input id="cun_${k}" class="ltr" placeholder="نام کاربری جدید" style="max-width:200px"><button class="btn sm" data-cu="${k}">تغییر نام کاربری</button></div><div class="row" style="margin-top:8px"><button class="btn sm" data-cr="${k}">بازنشانی رمز به رمز اولیه</button><input id="cpw_${k}" class="ltr" placeholder="یا رمز دلخواه (حداقل ۸ نویسه)" style="max-width:240px"><button class="btn sec sm" data-cs2="${k}">تعیین رمز دلخواه</button></div>`:'حساب این مدیر هنوز ساخته نشده است.')+'</div>'}).join('');
   const go=async(k,pw)=>{const {error}=await sb.rpc('creator_reset_admin',{p_school:k,p_password:pw});
@@ -1313,7 +1313,7 @@ $('#prt').onclick=()=>{if(!me||!me.full_name||!me.national_id){alert('ابتدا
 let regs=[];
 async function loadList(){
   const sc=me.admin_school;
-  const r=await sb.from('memberships').select('*').eq('school',sc).order('created_at');
+  const r=await sb.from('memberships_dec').select('*').eq('school',sc).order('created_at');
   const pr=await sb.from('profiles_dec').select('*').eq('role','teacher');
   const pm=new Map((pr.data||[]).map(x=>[x.id,x]));
   list=(r.data||[]).filter(x=>pm.has(x.user_id)).map(x=>({...pm.get(x.user_id),...(x.details||{}),mstatus:x.status}));
