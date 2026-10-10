@@ -387,8 +387,9 @@ else sb.auth.onAuthStateChange((ev,s)=>{if(ev==='TOKEN_REFRESHED')return;if(ev==
 async function onSession(s){
   if(chan){sb.removeChannel(chan);chan=null}
   if(!s){me=null;msgs=[];list=[];mems=[];lastUid=null;filled=false;aview('a_home');$('#auth').classList.remove('hide');$('#app').classList.add('hide');$('#out').classList.add('hide');$('#who').classList.add('hide');return}
-  const {data,error:pe}=await sb.from('profiles').select('*').eq('id',s.user.id).single();
+  const {data,error:pe}=await sb.from('profiles_dec').select('*').eq('id',s.user.id).single();
   me=data;filled=false;sfilled=false;scFilled=false;
+  if(me&&me.role==='creator'&&!(await ensureAal2()))return;
   await loadSchoolInfo();
   mems=[];if(me&&me.role==='teacher'){const rm=await sb.from('memberships').select('*').eq('user_id',me.id);mems=rm.data||[]}
   if(me){chatSchool=me.role==='admin'?me.admin_school:((mems.find(x=>x.status==='approved')||{}).school||null);coopSel=(mems[0]||{}).school||null;if(lastUid!==me.id){lastUid=me.id;tab=me.role==='creator'?'creator':me.role==='admin'?'admin':me.role==='student'?'stu':(mems.some(x=>x.status==='approved')?'chat':'form')}}
@@ -454,7 +455,7 @@ $('#save').onclick=async()=>{
   d.teacher_extra={...xr.ex,...(mar?{marital_status:mar}:{}),...(pc?{postal_code:pc}:{}),...(fat?{father_name:fat}:{}),...(sn?{spouse_nid:sn}:{})};
   const {error}=await sb.from('profiles').update(d).eq('id',me.id);
   if(error){e.textContent='ذخیره نشد: '+error.message;return}
-  me={...me,...d};if(isAdm()){const r=await sb.from('profiles').select('*').eq('id',me.id).single();if(r.data)me=r.data}e.style.color='var(--ok)';e.textContent='اطلاعات با موفقیت ذخیره شد.';render();setTimeout(()=>e.textContent='',3000);
+  me={...me,...d};if(isAdm()){const r=await sb.from('profiles_dec').select('*').eq('id',me.id).single();if(r.data)me=r.data}e.style.color='var(--ok)';e.textContent='اطلاعات با موفقیت ذخیره شد.';render();setTimeout(()=>e.textContent='',3000);
 };
 
 // ---- گفتگو ----
@@ -1166,6 +1167,52 @@ async function printStudent(s){
 }
 $('#s_print').onclick=()=>{if(!me.birth_date){alert('ابتدا اطلاعات پرونده را ثبت کنید.');return}printStudent(me)};
 
+// ---- ورود دو مرحله‌ای (TOTP) سازنده ----
+let mfaBusy=false;
+async function ensureAal2(){
+  if(mfaBusy)return false;
+  let a;try{a=await sb.auth.mfa.getAuthenticatorAssuranceLevel()}catch(e){a={error:e}}
+  if(!a.error&&a.data&&a.data.currentLevel==='aal2')return true;
+  mfaBusy=true;
+  try{return await mfaDialog()}finally{mfaBusy=false}
+}
+function mfaDialog(){return new Promise(res=>{
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(5,12,30,.97);z-index:90;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto';
+  m.innerHTML=`<div class="card" style="max-width:430px;width:100%;margin:0"><h3 style="margin-top:0">🔐 ورود دو مرحله‌ای سازنده</h3><div id="mf_body">در حال آماده‌سازی…</div><div class="err" id="mf_err"></div><div class="row" style="margin-top:10px"><button class="btn" id="mf_ok" disabled>تأیید</button><button class="btn sec" id="mf_out">خروج</button></div></div>`;
+  document.body.append(m);
+  const q=x=>m.querySelector(x),err=t=>{q('#mf_err').textContent=t};
+  let factorId=null;const done=v=>{m.remove();res(v)};
+  q('#mf_out').onclick=async()=>{done(false);await $('#out').onclick()};
+  q('#mf_ok').onclick=async()=>{
+    const c=q('#mf_code'),code=dig(c?c.value:'').replace(/\s/g,'');
+    if(!/^\d{6}$/.test(code)){err('کد باید ۶ رقم باشد.');return}
+    q('#mf_ok').disabled=true;err('');
+    const ch=await sb.auth.mfa.challenge({factorId});
+    if(ch.error){err('خطا: '+ch.error.message);q('#mf_ok').disabled=false;return}
+    const vr=await sb.auth.mfa.verify({factorId,challengeId:ch.data.id,code});
+    if(vr.error){err('کد نادرست است یا ساعت دستگاه دقیق نیست.');q('#mf_ok').disabled=false;return}
+    done(true);
+  };
+  (async()=>{
+    const lf=await sb.auth.mfa.listFactors();
+    if(lf.error){q('#mf_body').textContent='ورود دو مرحله‌ای در این پروژه Supabase در دسترس نیست یا خطا رخ داد: '+lf.error.message;return}
+    const ver=(lf.data.totp||[]).find(f=>f.status==='verified');
+    if(ver){
+      factorId=ver.id;
+      q('#mf_body').innerHTML='کد ۶ رقمی برنامه احراز هویت (مثل Google Authenticator) را وارد کنید.<input id="mf_code" class="ltr" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="margin-top:8px">';
+    }else{
+      for(const f of (lf.data.all||[]).filter(f=>f.status==='unverified'))await sb.auth.mfa.unenroll({factorId:f.id});
+      const en=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'creator'});
+      if(en.error){q('#mf_body').textContent='راه‌اندازی انجام نشد: '+en.error.message+' (آیا ورود دو مرحله‌ای TOTP در Supabase فعال است؟)';return}
+      factorId=en.data.id;
+      q('#mf_body').innerHTML=`<div>بار اول: برنامه احراز هویت را باز کنید، QR را اسکن کنید (یا کلید متنی را وارد کنید) و کد ۶ رقمی را بنویسید.</div><div style="text-align:center;margin:10px 0"><img alt="QR" src="${en.data.totp.qr_code}" style="width:200px;height:200px;background:#fff;padding:6px;border-radius:8px"></div><div style="font-size:12px;word-break:break-all">کلید متنی: <code dir="ltr">${esc(en.data.totp.secret)}</code></div><input id="mf_code" class="ltr" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="margin-top:8px">`;
+    }
+    q('#mf_ok').disabled=false;
+    const c=q('#mf_code');if(c){c.focus();c.onkeydown=e=>{if(e.key==='Enter')q('#mf_ok').click()}}
+  })().catch(e=>{q('#mf_body').textContent='خطا: '+(e.message||e)});
+})}
+
 // ---- مدارک ----
 const CATS={birth_certificate:'شناسنامه (همه صفحات)',national_card:'کارت ملی',appreciation:'تقدیرنامه',decree:'حکم / ابلاغ',inservice:'لیست دوره‌های ضمن خدمت',plan_daily:'طرح درس روزانه',plan_annual:'طرح درس سالانه',other:'سایر مدارک'};
 $('#dcat').innerHTML=Object.entries(CATS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
@@ -1266,13 +1313,15 @@ $('#prt').onclick=()=>{if(!me||!me.full_name||!me.national_id){alert('ابتدا
 let regs=[];
 async function loadList(){
   const sc=me.admin_school;
-  const r=await sb.from('memberships').select('*,profiles(*)').eq('school',sc).order('created_at');
-  list=(r.data||[]).filter(x=>x.profiles).map(x=>({...x.profiles,...(x.details||{}),mstatus:x.status}));
-  const g=await sb.from('registrations').select('*').is('user_id',null).order('created_at');
+  const r=await sb.from('memberships').select('*').eq('school',sc).order('created_at');
+  const pr=await sb.from('profiles_dec').select('*').eq('role','teacher');
+  const pm=new Map((pr.data||[]).map(x=>[x.id,x]));
+  list=(r.data||[]).filter(x=>pm.has(x.user_id)).map(x=>({...pm.get(x.user_id),...(x.details||{}),mstatus:x.status}));
+  const g=await sb.from('registrations_dec').select('*').is('user_id',null).order('created_at');
   regs=(g.data||[]).filter(x=>(x.sstatus||{})[sc]==='pending');
-  const st=await sb.from('profiles').select('*').eq('role','student').eq('school',sc).order('created_at');
+  const st=await sb.from('profiles_dec').select('*').eq('role','student').eq('school',sc).order('created_at');
   students=st.data||[];
-  const im=await sb.from('registrations').select('*').is('user_id',null).eq('status','approved').contains('sstatus',{[sc]:'approved'}).order('created_at');
+  const im=await sb.from('registrations_dec').select('*').is('user_id',null).eq('status','approved').contains('sstatus',{[sc]:'approved'}).order('created_at');
   impRows=im.data||[];impCnt={teacher:impRows.filter(x=>x.kind==='teacher').length,student:impRows.filter(x=>x.kind==='student').length};
 }
 function impRowsHtml(kind,start,q){
@@ -1328,7 +1377,7 @@ function renderAdmin(){
 $('#q').oninput=renderAdmin;$('#fl').onclick=()=>{onlyPending=!onlyPending;renderAdmin()};
 $('#rf').onclick=async()=>{await loadList();renderAdmin()};
 // ---- ارقام فارسی در تمام صفحه ----
-const faTxt=n=>{if(n.nodeType===3){const t=n.nodeValue,u=fa(t);if(u!==t)n.nodeValue=u}else if(n.nodeType===1&&!['SCRIPT','STYLE','TEXTAREA','INPUT','SELECT'].includes(n.tagName))n.childNodes.forEach(faTxt)};
+const faTxt=n=>{if(n.nodeType===3){const t=n.nodeValue,u=fa(t);if(u!==t)n.nodeValue=u}else if(n.nodeType===1&&!['SCRIPT','STYLE','TEXTAREA','INPUT','SELECT','CODE'].includes(n.tagName))n.childNodes.forEach(faTxt)};
 new MutationObserver(ms=>ms.forEach(m=>{m.addedNodes.forEach(faTxt);if(m.type==='characterData')faTxt(m.target)})).observe(document.body,{childList:true,subtree:true,characterData:true});
 faTxt(document.body);
 document.addEventListener('input',e=>{const t=e.target;
