@@ -222,7 +222,8 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <div class="dmwrap">
 <div id="dm_list" class="hide"><input id="dm_q" placeholder="جستجوی همکار…" style="margin-bottom:6px"><div id="dm_items"></div></div>
 <div id="dm_main" class="hide"><div id="dm_title" style="font-weight:700;margin-bottom:6px"></div><div id="dm_msgs"></div>
-<div id="dm_cf"><input id="dm_t" placeholder="پیام خصوصی…" maxlength="1000"><button class="btn" id="dm_s">ارسال</button></div></div>
+<div id="dm_sp" class="chips hide" style="margin-bottom:6px"></div>
+<div id="dm_cf"><button class="btn sec" id="dm_sk" title="استیکر">😀</button><button class="btn sec" id="dm_at" title="ارسال فایل">📎</button><input type="file" id="dm_fi" class="hide"><input id="dm_t" placeholder="پیام خصوصی…" maxlength="1000"><button class="btn" id="dm_s">ارسال</button></div></div>
 </div></section>
 
 <section id="v-chat" class="card hide">
@@ -1278,7 +1279,7 @@ function renderDm(){
     const q=dig($('#dm_q').value);
     const people=list.filter(s=>s.mstatus==='approved'&&(!q||nm(s).includes(q)));
     people.sort((a,b)=>((last[b.id]||{}).created_at||'').localeCompare((last[a.id]||{}).created_at||'')||nm(a).localeCompare(nm(b),'fa'));
-    $('#dm_items').innerHTML=people.length?people.map(s=>`<div class="dmi ${s.id===dmSel?'on':''}" data-u="${esc(s.id)}">${esc(nm(s))}${unr[s.id]?`<span class="dmb">${unr[s.id]}</span>`:''}<div style="font-size:11px;opacity:.8">${esc(((last[s.id]||{}).body||'').slice(0,34))}</div></div>`).join(''):'<div class="banner">همکار تأییدشده‌ای نیست.</div>';
+    $('#dm_items').innerHTML=people.length?people.map(s=>`<div class="dmi ${s.id===dmSel?'on':''}" data-u="${esc(s.id)}">${esc(nm(s))}${unr[s.id]?`<span class="dmb">${unr[s.id]}</span>`:''}<div style="font-size:11px;opacity:.8">${esc(dmPreview(last[s.id]))}</div></div>`).join(''):'<div class="banner">همکار تأییدشده‌ای نیست.</div>';
     $('#dm_items').querySelectorAll('[data-u]').forEach(d=>d.onclick=()=>{dmSel=d.dataset.u;render()});
     sch=me.admin_school;uid=dmSel;const p=list.find(s=>s.id===dmSel);title=p?'گفتگو با '+nm(p):'';
   }else{sch=dmSchool;uid=me.id;title=sch?'گفتگو با مدیر مدرسه '+schName(sch):''}
@@ -1288,22 +1289,45 @@ function renderDm(){
   const box=$('#dm_msgs'),near=box.scrollHeight-box.scrollTop-box.clientHeight<80;box.innerHTML='';
   dms.filter(m=>m.school===sch&&m.user_id===uid).forEach(m=>{
     const mine=m.sender_id===me.id,d=document.createElement('div');d.className='m'+(mine?' me':'');
-    const t=document.createElement('span');t.textContent=m.body;d.append(t);
+    if(m.kind==='sticker'){const st=document.createElement('div');st.className='stk';st.textContent=m.body;d.append(st)}
+    else if(m.kind==='file'){const a=document.createElement('a');a.textContent='📎 '+(m.file_name||'فایل');a.href='#';
+      a.onclick=async e=>{e.preventDefault();const u=await dmUrl(m.file_path,true);if(u)window.open(u,'_blank')};d.append(a);
+      if((m.file_type||'').startsWith('image/'))dmUrl(m.file_path).then(u=>{if(!u)return;const i=document.createElement('img');i.src=u;i.onload=()=>{if(near)box.scrollTop=box.scrollHeight};a.after(i)})}
+    else{const t=document.createElement('span');t.textContent=m.body;d.append(t)}
     const sm=document.createElement('small');sm.textContent=new Date(m.created_at).toLocaleString('fa-IR',{dateStyle:'short',timeStyle:'short'});d.append(sm);
-    if(mine){const x=document.createElement('span');x.className='x';x.textContent='✕';x.title='حذف پیام';
-      x.onclick=async()=>{if(!confirm('این پیام حذف شود؟'))return;const r=await sb.from('direct_messages').delete().eq('id',m.id).select('id');if(r.error||!r.data||!r.data.length){alert('حذف انجام نشد.');return}dms=dms.filter(z=>z.id!==m.id);renderDm()};d.append(x)}
+    if(mine||isAdm()){const x=document.createElement('span');x.className='x';x.textContent='✕';x.title='حذف پیام';
+      x.onclick=async()=>{if(!confirm('این پیام حذف شود؟'))return;const r=await sb.from('direct_messages').delete().eq('id',m.id).select('id');if(r.error||!r.data||!r.data.length){alert('حذف انجام نشد.');return}if(m.file_path)await sb.storage.from('dm-files').remove([m.file_path]);dms=dms.filter(z=>z.id!==m.id);renderDm()};d.append(x)}
     box.append(d)});
   if(near)box.scrollTop=box.scrollHeight;
 }
-async function sendDm(){
-  const t=$('#dm_t').value.trim();if(!t)return;
-  const adm=isAdm(),uid=adm?dmSel:me.id,sch=adm?me.admin_school:dmSchool;if(!uid||!sch)return;
-  $('#dm_t').value='';
-  const {data,error}=await sb.from('direct_messages').insert({school:sch,user_id:uid,sender_id:me.id,body:t}).select().single();
-  if(error){$('#dm_t').value=t;alert('ارسال نشد: '+error.message+' (آیا schema_v18.sql اجرا شده است؟)');return}
+const dmUrls={};
+async function dmUrl(pth,dl){const k=pth+(dl?'|d':'');if(!dmUrls[k]){const {data}=await sb.storage.from('dm-files').createSignedUrl(pth,3600,dl?{download:true}:undefined);dmUrls[k]=(data&&data.signedUrl)||''}return dmUrls[k]}
+const dmPreview=m=>!m?'':m.kind==='sticker'?'🙂 استیکر':m.kind==='file'?'📎 '+(m.file_name||'فایل'):(m.body||'').slice(0,34);
+const dmCtx=()=>{const adm=isAdm();return {uid:adm?dmSel:me.id,sch:adm?me.admin_school:dmSchool}};
+async function sendDmRow(row){
+  const {uid,sch}=dmCtx();if(!uid||!sch)return false;
+  const {data,error}=await sb.from('direct_messages').insert({school:sch,user_id:uid,sender_id:me.id,...row}).select().single();
+  if(error){alert('ارسال نشد: '+error.message+' (آیا schema_v18.sql و schema_v19.sql اجرا شده است؟)');return false}
   if(data&&!dms.some(x=>x.id===data.id))dms.push(data);
-  renderDm();
+  renderDm();return true;
 }
+async function sendDm(){const t=$('#dm_t').value.trim();if(!t)return;$('#dm_t').value='';if(!(await sendDmRow({body:t})))$('#dm_t').value=t}
+$('#dm_sp').innerHTML=STK.map(x=>`<button class="btn sec" data-s="${x}" style="font-size:26px">${x}</button>`).join('');
+$('#dm_sp').querySelectorAll('button').forEach(b=>b.onclick=()=>{$('#dm_sp').classList.add('hide');sendDmRow({kind:'sticker',body:b.dataset.s})});
+$('#dm_sk').onclick=()=>$('#dm_sp').classList.toggle('hide');
+$('#dm_at').onclick=()=>$('#dm_fi').click();
+$('#dm_fi').onchange=async()=>{
+  const f0=$('#dm_fi').files[0];$('#dm_fi').value='';if(!f0)return;
+  const {uid,sch}=dmCtx();if(!uid||!sch)return;
+  const f=await shrinkImage(f0,1280,0.78);
+  if(f.size>5*1024*1024){alert('حجم فایل نباید بیشتر از ۵ مگابایت باشد.');return}
+  const ext=f===f0?((f0.name.split('.').pop()||'bin').replace(/[^a-zA-Z0-9]/g,'').slice(0,8)||'bin'):'jpg';
+  const path=`${sch}/${uid}/${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const up=await sb.storage.from('dm-files').upload(path,f,{contentType:f.type||'application/octet-stream'});
+  if(up.error){alert('آپلود فایل انجام نشد: '+up.error.message+' (آیا schema_v19.sql اجرا شده است؟)');return}
+  const ok=await sendDmRow({kind:'file',body:'',file_path:path,file_name:f0.name.slice(0,120),file_type:f.type||''});
+  if(!ok)await sb.storage.from('dm-files').remove([path]);
+};
 $('#dm_s').onclick=sendDm;$('#dm_t').onkeydown=e=>{if(e.key==='Enter')sendDm()};
 $('#dm_q').oninput=()=>renderDm();
 $('#dm_school').onchange=()=>{dmSchool=$('#dm_school').value;render()};
