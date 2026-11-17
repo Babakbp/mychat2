@@ -186,6 +186,9 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <label style="margin-top:8px">توضیحات (اختیاری)</label><textarea id="ap_note" rows="2" maxlength="300"></textarea>
 <div class="row" style="margin-top:8px"><button class="btn" id="ap_up">بارگذاری اپلیکیشن</button><button class="btn sec" id="ap_del">حذف اپلیکیشن</button></div>
 <div class="err" id="ap_msg"></div>
+<h3 style="margin-top:16px">لینک اتصال اپلیکیشن به مدرسه</h3>
+<div style="font-size:13px;color:var(--mu)">برای هر مدرسه یک لینک جدا بنویسید. هر مدیر و دبیر فقط لینک مدرسه خودش را می‌بیند و کنار آن دکمه «کپی لینک» هست.</div>
+<div id="ap_act_wrap"></div>
 </section>
 
 <section id="v-app" class="card hide">
@@ -193,6 +196,7 @@ th,td{padding:8px;border-bottom:1px solid var(--br);text-align:right;vertical-al
 <div class="banner" id="app_info"></div>
 <div class="row"><button class="btn" id="app_dl">⬇ دانلود اپلیکیشن</button></div>
 <div class="err" id="app_msg"></div>
+<div id="act_wrap"></div>
 <details class="banner" style="margin-top:10px"><summary style="cursor:pointer;font-weight:600">راهنمای نصب</summary>
 <ul style="line-height:2;margin:8px 0 0">
 <li>فایل را روی گوشی اندروید دانلود و باز کنید.</li>
@@ -434,6 +438,7 @@ async function onSession(s){
   if(me&&me.role==='creator'&&!(await ensureAal2()))return;
   await loadSchoolInfo();
   await loadAppInfo();
+  await loadActInfo();
   mems=[];if(me&&me.role==='teacher'){const rm=await sb.from('memberships_dec').select('*').eq('user_id',me.id);mems=rm.data||[]}
   if(me){chatSchool=me.role==='admin'?me.admin_school:((mems.find(x=>x.status==='approved')||{}).school||null);coopSel=(mems[0]||{}).school||null;if(lastUid!==me.id){lastUid=me.id;tab=me.role==='creator'?'creator':me.role==='admin'?'admin':me.role==='student'?'stu':(mems.some(x=>x.status==='approved')?'chat':'form')}}
   $('#auth').classList.add('hide');$('#app').classList.remove('hide');$('#out').classList.remove('hide');$('#who').classList.remove('hide');
@@ -451,8 +456,8 @@ const isAdm=()=>me?.role==='admin',isCre=()=>me?.role==='creator',canChat=()=>!!
 function render(){
   if(!me)return;
   const dmTab=['dm','گفتگوی خصوصی'+(canDm()&&dmUnread()?' ('+dmUnread()+')':'')];
-  const tabs=[['chat','گفتگو'],...(canDm()?[dmTab]:[]),['form','مشخصات من'],['coop','همکاری در مدارس'],['docs','مدارک من'],...(appInfo?[['app','📱 اپلیکیشن']]:[])];if(isAdm())tabs.push(['admin','پنل دبیران'],['students','پنل دانش‌آموزان']);tabs.push(['acct','حساب']);
-  if(isAdm()){tabs.length=0;tabs.push(['admin','پنل دبیران'],['students','پنل دانش‌آموزان'],['chat','گفتگو'],dmTab,['form','مشخصات من'],['docs','مدارک من'],...(appInfo?[['app','📱 اپلیکیشن']]:[]),['acct','حساب'])}
+  const tabs=[['chat','گفتگو'],...(canDm()?[dmTab]:[]),['form','مشخصات من'],['coop','همکاری در مدارس'],['docs','مدارک من'],...((appInfo||hasAct())?[['app','📱 اپلیکیشن']]:[])];if(isAdm())tabs.push(['admin','پنل دبیران'],['students','پنل دانش‌آموزان']);tabs.push(['acct','حساب']);
+  if(isAdm()){tabs.length=0;tabs.push(['admin','پنل دبیران'],['students','پنل دانش‌آموزان'],['chat','گفتگو'],dmTab,['form','مشخصات من'],['docs','مدارک من'],...((appInfo||hasAct())?[['app','📱 اپلیکیشن']]:[]),['acct','حساب'])}
   if(me.role==='student'){tabs.length=0;tabs.push(['stu','پرونده من'],['acct','حساب'])}
   if(isCre()){tabs.length=0;tabs.push(['creator','پنل سازنده'],['acct','حساب'])}
   if(me.must_change){tabs.length=0;tabs.push(['acct','حساب']);tab='acct'}
@@ -1366,12 +1371,20 @@ function appInfoHtml(a){
   return `<b>${esc(a.name||'portal.apk')}</b>${a.version?' — نسخه '+esc(a.version):''}<br>حجم: ${fmtSize(a.size||0)} | تاریخ بارگذاری: ${a.updated_at?new Date(a.updated_at).toLocaleDateString('fa-IR'):'—'}${a.note?'<br>'+esc(a.note):''}${a.sha256?'<br><span style="font-size:11px">شناسه فایل: <code dir="ltr" style="word-break:break-all">SHA-256 '+esc(a.sha256)+'</code></span>':''}`;
 }
 function renderApp(){
-  if(!appInfo){$('#app_info').textContent='فعلاً فایلی بارگذاری نشده است.';$('#app_dl').disabled=true;return}
-  $('#app_info').innerHTML=appInfoHtml(appInfo);$('#app_dl').disabled=false;
+  if(!appInfo){$('#app_info').textContent='فعلاً فایلی بارگذاری نشده است.';$('#app_dl').disabled=true}
+  else{$('#app_info').innerHTML=appInfoHtml(appInfo);$('#app_dl').disabled=false}
+  const w=$('#act_wrap'),ks=Object.keys(actInfos);
+  w.innerHTML=ks.map(k=>`<div class="banner" style="margin-top:10px"><b>🔗 لینک اتصال اپلیکیشن به مدرسه ${esc(schName(k))}</b>${actInfos[k].note?`<div data-nofa style="font-size:13px;margin:6px 0;white-space:pre-wrap">${esc(actInfos[k].note)}</div>`:''}<div class="row" style="margin-top:6px"><code dir="ltr" style="word-break:break-all;flex:1;min-width:200px;background:var(--bg);padding:6px 8px;border-radius:6px;border:1px solid var(--br)">${esc(actInfos[k].url)}</code><button class="btn" data-copy="${k}">📋 کپی لینک</button><a class="btn sec" href="${esc(actInfos[k].url)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-block">↗ باز کردن</a></div></div>`).join('');
+  w.querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{
+    const ok=await copyText(actInfos[b.dataset.copy].url);
+    b.textContent=ok?'✓ کپی شد':'کپی نشد؛ لینک را دستی انتخاب کنید';setTimeout(()=>{b.textContent='📋 کپی لینک'},2200)});
 }
 function renderApCur(){
   $('#ap_cur').innerHTML=appInfo?'فایل فعلی:<br>'+appInfoHtml(appInfo):'هنوز فایلی بارگذاری نشده است.';
   $('#ap_del').disabled=!appInfo;
+  buildActForms();
+  if(!apFilled){Object.keys(ACT_KEYS).forEach(k=>{$('#ap_act_'+k).value=actInfos[k]?actInfos[k].url:'';$('#ap_actn_'+k).value=actInfos[k]?(actInfos[k].note||''):''});apFilled=true}
+  Object.keys(ACT_KEYS).forEach(k=>{document.querySelector('[data-ad="'+k+'"]').disabled=!actInfos[k]});
 }
 $('#app_dl').onclick=async()=>{
   const e=$('#app_msg');e.style.color='#c0392b';e.textContent='';if(!appInfo)return;
@@ -1409,6 +1422,46 @@ $('#ap_del').onclick=async()=>{
   appInfo=null;renderApCur();render();e.style.color='var(--ok)';e.textContent='حذف شد.';
 };
 async function sha256Hex(file){const h=await crypto.subtle.digest('SHA-256',await file.arrayBuffer());return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+
+// ---- لینک اتصال اپلیکیشن به مدرسه (برای هر مدرسه جدا؛ فقط اعضای همان مدرسه می‌خوانند) ----
+const ACT_KEYS={raz:'private:app_activation_raz',mehr:'private:app_activation_mehr'};
+let actInfos={},apFilled=false;
+const hasAct=()=>Object.keys(actInfos).length>0;
+async function loadActInfo(){
+  actInfos={};if(!sb||initErr||!me)return;
+  try{const {data}=await sb.from('app_settings').select('key,value').in('key',Object.values(ACT_KEYS));
+    (data||[]).forEach(r=>{const k=Object.keys(ACT_KEYS).find(x=>ACT_KEYS[x]===r.key);if(k&&r.value&&r.value.url)actInfos[k]=r.value})}catch(e){}
+}
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);return true}
+  catch(x){const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.append(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(y){}a.remove();return ok}
+}
+function buildActForms(){
+  const w=$('#ap_act_wrap');if(w.dataset.built)return;w.dataset.built='1';
+  w.innerHTML=Object.keys(ACT_KEYS).map(k=>`<div class="banner" style="margin-top:8px"><b>${esc(schName(k))}</b>
+<label style="margin-top:6px">لینک (https://…)</label><input id="ap_act_${k}" class="ltr" placeholder="https://example.com/connect/..." maxlength="500">
+<label style="margin-top:6px">توضیح (اختیاری)</label><textarea id="ap_actn_${k}" rows="2" maxlength="300" placeholder="مثلاً: بعد از نصب، این لینک را در برنامه وارد کنید"></textarea>
+<div class="row" style="margin-top:6px"><button class="btn sm" data-as="${k}">ذخیره لینک</button><button class="btn sec sm" data-ad="${k}">حذف لینک</button></div><div class="err" id="ap_act_msg_${k}"></div></div>`).join('');
+  w.querySelectorAll('[data-as]').forEach(b=>b.onclick=()=>saveAct(b.dataset.as));
+  w.querySelectorAll('[data-ad]').forEach(b=>b.onclick=()=>delAct(b.dataset.ad));
+}
+async function saveAct(k){
+  const e=document.getElementById('ap_act_msg_'+k);e.style.color='#c0392b';e.textContent='';
+  const v=document.getElementById('ap_act_'+k).value.trim();let u;
+  try{u=new URL(v)}catch(x){e.textContent='لینک معتبر نیست. با https:// شروع شود.';return}
+  if(!/^https?:$/.test(u.protocol)){e.textContent='فقط لینک http یا https مجاز است.';return}
+  const info={url:u.href,note:document.getElementById('ap_actn_'+k).value.trim(),updated_at:new Date().toISOString()};
+  const {error}=await sb.from('app_settings').upsert({key:ACT_KEYS[k],value:info,updated_at:info.updated_at});
+  if(error){e.textContent='ذخیره نشد: '+error.message+' (آیا schema_v21.sql اجرا شده است؟)';return}
+  actInfos[k]=info;renderApCur();render();e.style.color='var(--ok)';e.textContent='ذخیره شد و برای مدیر و دبیران همین مدرسه نمایش داده می‌شود.';
+}
+async function delAct(k){
+  if(!actInfos[k]||!confirm('لینک این مدرسه حذف شود؟'))return;
+  const e=document.getElementById('ap_act_msg_'+k);e.style.color='#c0392b';e.textContent='';
+  const {error}=await sb.from('app_settings').delete().eq('key',ACT_KEYS[k]);
+  if(error){e.textContent='حذف انجام نشد: '+error.message;return}
+  delete actInfos[k];document.getElementById('ap_act_'+k).value='';document.getElementById('ap_actn_'+k).value='';renderApCur();render();e.style.color='var(--ok)';e.textContent='حذف شد.';
+}
 
 // ---- مدارک ----
 const CATS={birth_certificate:'شناسنامه (همه صفحات)',national_card:'کارت ملی',appreciation:'تقدیرنامه',decree:'حکم / ابلاغ',inservice:'لیست دوره‌های ضمن خدمت',plan_daily:'طرح درس روزانه',plan_annual:'طرح درس سالانه',other:'سایر مدارک'};
@@ -1575,11 +1628,12 @@ function renderAdmin(){
 $('#q').oninput=renderAdmin;$('#fl').onclick=()=>{onlyPending=!onlyPending;renderAdmin()};
 $('#rf').onclick=async()=>{$('#q').value='';onlyPending=false;await loadList();renderAdmin()};
 // ---- ارقام فارسی در تمام صفحه ----
-const faTxt=n=>{if(n.nodeType===3){const t=n.nodeValue,u=fa(t);if(u!==t)n.nodeValue=u}else if(n.nodeType===1&&!['SCRIPT','STYLE','TEXTAREA','INPUT','SELECT','CODE'].includes(n.tagName))n.childNodes.forEach(faTxt)};
+const faTxt=n=>{if(n.nodeType===3){const t=n.nodeValue,u=fa(t);if(u!==t)n.nodeValue=u}else if(n.nodeType===1&&!n.hasAttribute('data-nofa')&&!['SCRIPT','STYLE','TEXTAREA','INPUT','SELECT','CODE'].includes(n.tagName))n.childNodes.forEach(faTxt)};
 new MutationObserver(ms=>ms.forEach(m=>{m.addedNodes.forEach(faTxt);if(m.type==='characterData')faTxt(m.target)})).observe(document.body,{childList:true,subtree:true,characterData:true});
 faTxt(document.body);
 document.addEventListener('input',e=>{const t=e.target;
   if(t.closest&&t.closest('.pwwrap'))return;
+  if((t.id||'').startsWith('ap_act')||t.id==='ap_ver')return;
   if(t.dataset&&('th' in t.dataset))return;
   if(['npw','snpw'].includes(t.id)||(t.id||'').startsWith('cpw_'))return;
   if((t.tagName==='INPUT'&&['text','tel','search',''].includes(t.type))||t.tagName==='TEXTAREA'){const v=t.value,u=fa(v);if(u!==v){const c=t.selectionStart;t.value=u;try{t.setSelectionRange(c,c)}catch(x){}}}},true);
